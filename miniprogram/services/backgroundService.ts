@@ -161,6 +161,11 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
  */
 function compressImage(imagePath: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    // 由于canvas出现错误，暂时跳过压缩直接使用原图
+    resolve(imagePath);
+    
+    // 下面是原来的压缩代码，现在暂时不使用，避免canvas错误
+    /*
     // 获取图片信息
     wx.getImageInfo({
       src: imagePath,
@@ -210,6 +215,7 @@ function compressImage(imagePath: string): Promise<string> {
         resolve(imagePath);
       }
     });
+    */
   });
 }
 

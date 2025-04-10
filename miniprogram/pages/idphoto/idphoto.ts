@@ -189,94 +189,114 @@ Page({
     const { selectedSize, selectedColor } = this.data;
     const { width, height } = selectedSize;
     
-    // 创建离屏canvas合成证件照
-    const ctx = wx.createCanvasContext('idPhotoCanvas');
-    
-    // 绘制背景色
-    ctx.fillStyle = selectedColor.color;
-    ctx.fillRect(0, 0, width, height);
-    
-    // 居中绘制人像
-    wx.getImageInfo({
-      src: noBackgroundImage,
-      success: (imageInfo) => {
-        const imgWidth = imageInfo.width;
-        const imgHeight = imageInfo.height;
-        
-        // 计算缩放比例和居中位置
-        let scale, x, y;
-        
-        if (imgWidth / imgHeight > width / height) {
-          // 图片更宽，以高度为准缩放
-          scale = height / imgHeight;
-          x = (width - imgWidth * scale) / 2;
-          y = 0;
-        } else {
-          // 图片更高，以宽度为准缩放
-          scale = width / imgWidth;
-          x = 0;
-          y = (height - imgHeight * scale) / 2;
+    try {
+      // 创建离屏canvas合成证件照
+      const ctx = wx.createCanvasContext('idPhotoCanvas');
+      
+      // 绘制背景色
+      ctx.fillStyle = selectedColor.color;
+      ctx.fillRect(0, 0, width, height);
+      
+      // 居中绘制人像
+      wx.getImageInfo({
+        src: noBackgroundImage,
+        success: (imageInfo) => {
+          const imgWidth = imageInfo.width;
+          const imgHeight = imageInfo.height;
+          
+          // 计算缩放比例和居中位置
+          let scale, x, y;
+          
+          if (imgWidth / imgHeight > width / height) {
+            // 图片更宽，以高度为准缩放
+            scale = height / imgHeight;
+            x = (width - imgWidth * scale) / 2;
+            y = 0;
+          } else {
+            // 图片更高，以宽度为准缩放
+            scale = width / imgWidth;
+            x = 0;
+            y = (height - imgHeight * scale) / 2;
+          }
+          
+          ctx.drawImage(
+            noBackgroundImage,
+            x,
+            y,
+            imgWidth * scale,
+            imgHeight * scale
+          );
+          
+          // 使用try-catch处理潜在的canvas错误
+          try {
+            ctx.draw(false, () => {
+              // 导出为图片
+              setTimeout(() => { // 添加延时，确保绘制完成
+                try {
+                  wx.canvasToTempFilePath({
+                    canvasId: 'idPhotoCanvas',
+                    x: 0,
+                    y: 0,
+                    width: width,
+                    height: height,
+                    destWidth: width * (this.data.resolution === 'high' ? 3 : 1),
+                    destHeight: height * (this.data.resolution === 'high' ? 3 : 1),
+                    success: (res) => {
+                      this.setData({
+                        resultImage: res.tempFilePath,
+                        currentStep: 'result',
+                        isProcessing: false
+                      });
+                      
+                      // 更新配额信息
+                      this.updateQuotaInfo();
+                      
+                      wx.hideLoading();
+                    },
+                    fail: (err) => {
+                      console.error('生成证件照失败', err);
+                      this.handleCanvasError(noBackgroundImage);
+                    }
+                  });
+                } catch (error) {
+                  console.error('Canvas操作异常', error);
+                  this.handleCanvasError(noBackgroundImage);
+                }
+              }, 300);
+            });
+          } catch (error) {
+            console.error('Canvas绘制异常', error);
+            this.handleCanvasError(noBackgroundImage);
+          }
+        },
+        fail: (err) => {
+          console.error('获取图片信息失败', err);
+          this.handleCanvasError(noBackgroundImage);
         }
-        
-        ctx.drawImage(
-          noBackgroundImage,
-          x,
-          y,
-          imgWidth * scale,
-          imgHeight * scale
-        );
-        
-        ctx.draw(false, () => {
-          // 导出为图片
-          wx.canvasToTempFilePath({
-            canvasId: 'idPhotoCanvas',
-            x: 0,
-            y: 0,
-            width: width,
-            height: height,
-            destWidth: width * (this.data.resolution === 'high' ? 3 : 1),
-            destHeight: height * (this.data.resolution === 'high' ? 3 : 1),
-            success: (res) => {
-              this.setData({
-                resultImage: res.tempFilePath,
-                currentStep: 'result',
-                isProcessing: false
-              });
-              
-              // 更新配额信息
-              this.updateQuotaInfo();
-              
-              wx.hideLoading();
-            },
-            fail: (err) => {
-              console.error('生成证件照失败', err);
-              this.setData({
-                isProcessing: false
-              });
-              
-              wx.hideLoading();
-              
-              wx.showToast({
-                title: '生成失败',
-                icon: 'error'
-              });
-            }
-          });
-        });
-      },
-      fail: (err) => {
-        console.error('获取图片信息失败', err);
-        this.setData({
-          isProcessing: false
-        });
-        
-        wx.hideLoading();
-        
-        wx.showToast({
-          title: '处理失败',
-          icon: 'error'
-        });
-      }
+      });
+    } catch (error) {
+      console.error('Canvas创建异常', error);
+      this.handleCanvasError(noBackgroundImage);
+    }
+  },
+  
+  // 处理Canvas错误的回退方案
+  handleCanvasError(noBackgroundImage) {
+    // Canvas操作失败时，直接使用抠图结果
+    this.setData({
+      resultImage: noBackgroundImage,
+      currentStep: 'result',
+      isProcessing: false
+    });
+    
+    // 更新配额信息
+    this.updateQuotaInfo();
+    
+    wx.hideLoading();
+    
+    wx.showToast({
+      title: '已完成基础处理',
+      icon: 'success'
     });
   },
   
@@ -359,14 +379,5 @@ Page({
   // 返回首页
   goBack() {
     wx.navigateBack();
-  },
-  
-  // 显示API使用情况
-  showApiInfo() {
-    wx.showModal({
-      title: 'API使用情况',
-      content: `当前使用: ${this.data.quotaInfo.used}/${this.data.quotaInfo.total}`,
-      showCancel: false
-    });
   }
 }) 

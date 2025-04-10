@@ -7,8 +7,6 @@ Page({
     imageUrl: '',
     resultImageUrl: '',
     isProcessing: false,
-    originalSize: 0,
-    apiKey: 'TrSfg7escwbcAKvHZ36M6mes',
     quotaInfo: null,
     canUseAPI: true
   },
@@ -43,7 +41,6 @@ Page({
       camera: 'back',
       success: (res) => {
         const tempFilePath = res.tempFiles[0].tempFilePath
-        const size = res.tempFiles[0].size
         
         // 获取图片信息
         wx.getImageInfo({
@@ -51,7 +48,6 @@ Page({
           success: (imageInfo) => {
             this.setData({
               imageUrl: tempFilePath,
-              originalSize: size,
               resultImageUrl: '',
             })
           },
@@ -101,7 +97,7 @@ Page({
     })
 
     // 使用API去除背景
-    removeBackground(this.data.imageUrl, this.data.apiKey)
+    removeBackground(this.data.imageUrl)
       .then(resultImagePath => {
         this.setData({
           resultImageUrl: resultImagePath,
@@ -200,11 +196,11 @@ Page({
     }
   },
   
-  // 跳转到服务器说明
+  // 跳转到服务器说明 - 简化展示内容
   goToServer() {
     wx.showModal({
-      title: '关于API调用',
-      content: '本功能通过Remove.bg API直接抠图，每日有使用次数限制。\n\nAPI Key: ' + this.data.apiKey + '\n\n今日已使用: ' + this.data.quotaInfo.used + '/' + this.data.quotaInfo.total,
+      title: '功能说明',
+      content: '本功能用于快速去除图片背景，每日可使用' + this.data.quotaInfo.total + '次，今日已使用' + this.data.quotaInfo.used + '次',
       showCancel: false
     })
   }
