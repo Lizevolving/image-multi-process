@@ -1,0 +1,115 @@
+<!--idphoto.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="title">证件照制作</view>
+    <view class="subtitle">快速制作标准证件照</view>
+  </view>
+  
+  <!-- 选择尺寸和背景色步骤 -->
+  <block wx:if="{{currentStep === 'select'}}">
+    <!-- 配额信息 -->
+    <view class="quota-info" wx:if="{{quotaInfo}}">
+      <text>今日API调用：{{quotaInfo.used}}/{{quotaInfo.total}}</text>
+      <progress percent="{{quotaInfo.used / quotaInfo.total * 100}}" stroke-width="3" activeColor="#3f51b5" backgroundColor="#e8eaf6" />
+    </view>
+    
+    <view class="section-title">选择证件照尺寸</view>
+    <view class="size-options">
+      <view 
+        wx:for="{{sizeOptions}}" 
+        wx:key="id" 
+        class="size-item {{selectedSize.id === item.id ? 'selected' : ''}}"
+        bindtap="selectSize"
+        data-id="{{item.id}}"
+      >
+        <view class="size-name">{{item.name}}</view>
+        <view class="size-preview" style="width: {{item.width / 3}}rpx; height: {{item.height / 3}}rpx;"></view>
+        <view class="size-desc">{{item.desc}}</view>
+      </view>
+    </view>
+    
+    <view class="section-title">选择背景颜色</view>
+    <view class="color-options">
+      <view 
+        wx:for="{{colorOptions}}" 
+        wx:key="id" 
+        class="color-item {{selectedColor.id === item.id ? 'selected' : ''}}"
+        bindtap="selectColor"
+        data-id="{{item.id}}"
+        style="background-color: {{item.color}}"
+      >
+        <view class="color-name" style="color: {{item.id === 'white' ? '#333' : '#fff'}}">{{item.name}}</view>
+      </view>
+    </view>
+    
+    <view class="section-title">照片清晰度</view>
+    <view class="resolution-switch" bindtap="switchResolution">
+      <text>高清模式</text>
+      <switch checked="{{resolution === 'high'}}" color="#3f51b5" />
+      <text class="resolution-hint">{{resolution === 'high' ? '3倍分辨率，文件较大' : '标准分辨率，文件较小'}}</text>
+    </view>
+    
+    <button class="action-button primary" bindtap="chooseImage">
+      <text>开始制作</text>
+    </button>
+  </block>
+  
+  <!-- 处理中提示 -->
+  <block wx:elif="{{currentStep === 'process'}}">
+    <view class="processing-container">
+      <view class="processing-title">图片处理中</view>
+      <view class="processing-steps">
+        <view class="step {{isProcessing ? 'active' : ''}}">
+          <view class="step-icon">1</view>
+          <view class="step-text">抠图去背景</view>
+        </view>
+        <view class="step-line"></view>
+        <view class="step">
+          <view class="step-icon">2</view>
+          <view class="step-text">合成证件照</view>
+        </view>
+      </view>
+      <view class="processing-hint">处理过程可能需要5-10秒，请耐心等待</view>
+    </view>
+  </block>
+  
+  <!-- 结果展示步骤 -->
+  <block wx:elif="{{currentStep === 'result'}}">
+    <view class="result-container">
+      <view class="result-title">
+        <text>制作完成</text>
+        <text class="result-size">{{selectedSize.name}} ({{selectedSize.desc}})</text>
+      </view>
+      
+      <view class="id-photo-preview">
+        <image class="id-photo-image" src="{{resultImage}}" mode="aspectFit"></image>
+      </view>
+      
+      <view class="action-buttons">
+        <button class="action-button secondary" bindtap="reCrop">
+          <text>重新裁剪</text>
+        </button>
+        <button class="action-button secondary" bindtap="regenerate">
+          <text>更换背景色</text>
+        </button>
+        <button class="action-button primary" bindtap="saveIdPhoto">
+          <text>保存到相册</text>
+        </button>
+      </view>
+      
+      <view class="note-box">
+        <view class="note-content">
+          <text>· 证件照已完成防打印检测优化</text>
+          <text>· {{resolution === 'high' ? '高清模式：适合打印' : '标准模式：适合电子使用'}}</text>
+          <text>· 背景颜色：{{selectedColor.name}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 返回按钮 -->
+  <view class="back-button" bindtap="goBack" wx:if="{{currentStep !== 'select'}}">返回</view>
+  
+  <!-- 用于图片合成的Canvas，设置为不可见 -->
+  <canvas canvas-id="idPhotoCanvas" style="width: {{selectedSize.width}}px; height: {{selectedSize.height}}px; position: absolute; left: -9999px;"></canvas>
+</view> 

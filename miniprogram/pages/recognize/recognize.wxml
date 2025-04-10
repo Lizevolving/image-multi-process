@@ -1,0 +1,103 @@
+<!--recognize.wxml-->
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="header">
+    <text class="title">图像识别</text>
+    <text class="subtitle">使用AI智能识别图片内容</text>
+  </view>
+
+  <!-- 上传图片区域 -->
+  <block wx:if="{{pageState == 'upload'}}">
+    <view class="upload-area" bindtap="chooseImage">
+      <image class="upload-icon" src="/assets/icons/camera.png" mode="aspectFit"></image>
+      <text class="upload-text">点击上传或拍摄图片</text>
+      <text class="upload-tip">支持多种图像类型识别</text>
+    </view>
+  </block>
+
+  <!-- 图片预览区域 -->
+  <block wx:if="{{pageState == 'preview'}}">
+    <view class="image-preview-container">
+      <image class="image-preview" src="{{imagePath}}" mode="aspectFit"></image>
+      
+      <!-- 自定义提示输入区 -->
+      <view class="custom-prompt-container">
+        <view class="prompt-header" bindtap="toggleCustomPrompt">
+          <text>添加自定义提示</text>
+          <image class="toggle-icon" src="/assets/icons/{{showCustomPrompt ? 'up' : 'down'}}.png" mode="aspectFit"></image>
+        </view>
+        
+        <view class="prompt-input-area" wx:if="{{showCustomPrompt}}">
+          <input class="prompt-input" placeholder="输入提示信息以获得更精确的识别结果" value="{{customPrompt}}" bindinput="onPromptInput" maxlength="100" />
+          <text class="prompt-tip">例如：识别这张照片中的建筑物、翻译图片中的文字等</text>
+        </view>
+      </view>
+
+      <!-- 错误提示 -->
+      <view class="error-message" wx:if="{{errorMsg}}">
+        <text>{{errorMsg}}</text>
+      </view>
+      
+      <!-- 操作按钮 -->
+      <view class="action-buttons">
+        <button class="action-btn secondary" bindtap="reSelectImage">重新选择</button>
+        <button class="action-btn primary" bindtap="startRecognition">开始识别</button>
+      </view>
+    </view>
+  </block>
+
+  <!-- 加载中状态 -->
+  <block wx:if="{{pageState == 'loading'}}">
+    <view class="loading-container">
+      <view class="loading-spinner"></view>
+      <text class="loading-text">正在识别图片内容...</text>
+    </view>
+  </block>
+
+  <!-- 识别结果展示 -->
+  <block wx:if="{{pageState == 'result'}}">
+    <view class="result-container">
+      <image class="result-image" src="{{imagePath}}" mode="aspectFit"></image>
+      
+      <view class="result-segments">
+        <view class="segment-item" wx:if="{{recognitionResult.main_content}}">
+          <text class="segment-title">主要内容</text>
+          <text class="segment-content">{{recognitionResult.main_content}}</text>
+        </view>
+        
+        <view class="segment-item" wx:if="{{recognitionResult.objects && recognitionResult.objects.length > 0}}">
+          <text class="segment-title">识别物体</text>
+          <view class="objects-list">
+            <text class="object-tag" wx:for="{{recognitionResult.objects}}" wx:key="index">{{item}}</text>
+          </view>
+        </view>
+        
+        <view class="segment-item" wx:if="{{recognitionResult.scene}}">
+          <text class="segment-title">场景描述</text>
+          <text class="segment-content">{{recognitionResult.scene}}</text>
+        </view>
+        
+        <view class="segment-item" wx:if="{{recognitionResult.text}}">
+          <text class="segment-title">文字内容</text>
+          <text class="segment-content">{{recognitionResult.text}}</text>
+        </view>
+      </view>
+      
+      <view class="full-result">
+        <text class="full-result-title">完整描述</text>
+        <text class="full-result-content">{{recognitionResult.full_description}}</text>
+      </view>
+      
+      <view class="action-buttons">
+        <button class="action-btn secondary" bindtap="reSelectImage">重新识别</button>
+        <button class="action-btn primary" bindtap="shareResult" open-type="share">分享结果</button>
+      </view>
+    </view>
+  </block>
+
+  <!-- 返回按钮 -->
+  <view class="back-button" bindtap="goBack">
+    <image class="back-icon" src="/assets/icons/back.png" mode="aspectFit"></image>
+    <text>返回</text>
+  </view>
+</view> 

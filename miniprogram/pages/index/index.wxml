@@ -1,0 +1,45 @@
+<!--index.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="title">图片处理工具</view>
+    <view class="subtitle">简单、高效的图片处理工具集</view>
+  </view>
+  
+  <view class="feature-grid">
+    <view class="feature-item" bindtap="navigateTo" data-page="compress">
+      <view class="feature-icon">
+        <image src="/images/compress.svg" mode="aspectFit"></image>
+      </view>
+      <view class="feature-name">图片压缩</view>
+      <view class="feature-desc">减小图片体积，便于分享</view>
+    </view>
+    
+    <view class="feature-item" bindtap="navigateTo" data-page="background">
+      <view class="feature-icon">
+        <image src="/images/background.svg" mode="aspectFit"></image>
+      </view>
+      <view class="feature-name">抠图去背景</view>
+      <view class="feature-desc">一键去除图片背景</view>
+    </view>
+    
+    <view class="feature-item" bindtap="navigateTo" data-page="recognize">
+      <view class="feature-icon">
+        <image src="/images/recognize.svg" mode="aspectFit"></image>
+      </view>
+      <view class="feature-name">图片识别</view>
+      <view class="feature-desc">识别图片中的文字和物体</view>
+    </view>
+    
+    <view class="feature-item" bindtap="navigateTo" data-page="idphoto">
+      <view class="feature-icon">
+        <image src="/images/idphoto.svg" mode="aspectFit"></image>
+      </view>
+      <view class="feature-name">证件照制作</view>
+      <view class="feature-desc">快速制作标准证件照</view>
+    </view>
+  </view>
+  
+  <view class="footer">
+    <text>轻松处理您的图片需求</text>
+  </view>
+</view>

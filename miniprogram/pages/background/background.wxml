@@ -1,0 +1,59 @@
+<!--background.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="title">抠图去背景</view>
+    <view class="subtitle">一键去除图片背景</view>
+  </view>
+  
+  <view class="note-box">
+    <view class="note-title">功能说明</view>
+    <view class="note-content">
+      <text>本功能使用remove.bg API自动识别前景，去除背景。</text>
+      <text class="note-api" bindtap="goToServer">查看API调用说明</text>
+    </view>
+  </view>
+  
+  <view class="quota-info" wx:if="{{quotaInfo}}">
+    <text>今日API调用：{{quotaInfo.used}}/{{quotaInfo.total}}</text>
+    <progress percent="{{quotaInfo.used / quotaInfo.total * 100}}" stroke-width="3" activeColor="#2ecc71" backgroundColor="#e8f5e9" />
+  </view>
+  
+  <view class="image-container">
+    <block wx:if="{{!imageUrl}}">
+      <view class="image-placeholder" bindtap="chooseImage">
+        <view class="placeholder-icon">+</view>
+        <view class="placeholder-text">点击选择图片</view>
+      </view>
+    </block>
+    <block wx:else>
+      <image class="selected-image" src="{{imageUrl}}" mode="aspectFit" bindtap="chooseImage"></image>
+      <view class="image-info">
+        <text>原始大小: {{originalSize / 1024 | 0}} KB</text>
+      </view>
+    </block>
+  </view>
+  
+  <block wx:if="{{imageUrl && !resultImageUrl}}">
+    <button class="process-button" bindtap="removeBackground" loading="{{isProcessing}}" disabled="{{!canUseAPI}}">
+      {{isProcessing ? '处理中...' : canUseAPI ? '去除背景' : 'API调用次数已达上限'}}
+    </button>
+    <view class="process-note">图片处理需要1-5秒，请耐心等待</view>
+  </block>
+  
+  <block wx:if="{{resultImageUrl}}">
+    <view class="result-container">
+      <view class="result-title">处理结果</view>
+      <image class="result-image" src="{{resultImageUrl}}" mode="aspectFit" bindtap="previewImage"></image>
+      <view class="result-info">
+        <text>背景已去除，图片带有透明背景</text>
+      </view>
+      <view class="button-group">
+        <button class="save-button" bindtap="saveImage">保存到相册</button>
+        <button class="preview-button" bindtap="previewImage">预览图片</button>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 用于图片压缩的Canvas，设置为不可见 -->
+  <canvas canvas-id="compressCanvas" style="width: 0px; height: 0px; position: absolute; left: -9999px;"></canvas>
+</view> 

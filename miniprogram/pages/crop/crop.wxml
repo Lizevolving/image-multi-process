@@ -1,0 +1,59 @@
+<!-- crop.wxml -->
+<view class="crop-container">
+  <!-- 裁剪区域容器 -->
+  <view class="cropper-container">
+    <!-- 原始图片，可移动和缩放 -->
+    <image 
+      class="crop-image" 
+      src="{{imagePath}}"
+      style="width: {{imageWidth * imageScale}}px; height: {{imageHeight * imageScale}}px; left: {{imageLeft}}px; top: {{imageTop}}px;"
+      bindtouchstart="touchStart"
+      bindtouchmove="touchMove"
+      bindtouchend="touchEnd"
+    ></image>
+    
+    <!-- 裁剪框 -->
+    <view 
+      class="crop-frame"
+      style="width: {{cropperWidth}}px; height: {{cropperHeight}}px; left: {{cropperLeft}}px; top: {{cropperTop}}px;"
+    >
+      <!-- 裁剪框四角 -->
+      <view class="corner top-left"></view>
+      <view class="corner top-right"></view>
+      <view class="corner bottom-left"></view>
+      <view class="corner bottom-right"></view>
+      
+      <!-- 裁剪框边框 -->
+      <view class="border top"></view>
+      <view class="border right"></view>
+      <view class="border bottom"></view>
+      <view class="border left"></view>
+      
+      <!-- 网格线 -->
+      <view class="grid-line h1"></view>
+      <view class="grid-line h2"></view>
+      <view class="grid-line v1"></view>
+      <view class="grid-line v2"></view>
+    </view>
+    
+    <!-- 遮罩层 -->
+    <view class="crop-mask top" style="height: {{cropperTop}}px; width: 100%;"></view>
+    <view class="crop-mask bottom" style="top: {{cropperTop + cropperHeight}}px; height: calc(100% - {{cropperTop + cropperHeight}}px); width: 100%;"></view>
+    <view class="crop-mask left" style="top: {{cropperTop}}px; height: {{cropperHeight}}px; width: {{cropperLeft}}px;"></view>
+    <view class="crop-mask right" style="top: {{cropperTop}}px; height: {{cropperHeight}}px; left: {{cropperLeft + cropperWidth}}px; width: calc(100% - {{cropperLeft + cropperWidth}}px);"></view>
+  </view>
+  
+  <!-- 裁剪提示 -->
+  <view class="crop-tip">
+    <text>单指拖动调整位置，双指缩放调整大小</text>
+  </view>
+  
+  <!-- 底部操作按钮 -->
+  <view class="crop-actions">
+    <button class="btn cancel" bindtap="cancelCrop">取消</button>
+    <button class="btn confirm" bindtap="confirmCrop">确定</button>
+  </view>
+  
+  <!-- 隐藏的Canvas用于生成裁剪后的图片 -->
+  <canvas canvas-id="cropCanvas" style="width: {{targetWidth}}px; height: {{targetHeight}}px; position: absolute; left: -9999px;"></canvas>
+</view> 

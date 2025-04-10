@@ -1,0 +1,27 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/compress/compress",
+    "pages/background/background",
+    "pages/recognize/recognize",
+    "pages/idphoto/idphoto",
+    "pages/crop/crop"
+  ],
+  "window": {
+    "navigationBarTextStyle": "white",
+    "navigationBarTitleText": "图片处理工具",
+    "navigationBarBackgroundColor": "#3498db"
+  },
+  "style": "v2",
+  "componentFramework": "glass-easel",
+  "lazyCodeLoading": "requiredComponents",
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "保存处理后的图片到相册"
+    },
+    "scope.camera": {
+      "desc": "拍摄需要处理的图片"
+    }
+  },
+  "requiredBackgroundModes": ["audio"]
+}
