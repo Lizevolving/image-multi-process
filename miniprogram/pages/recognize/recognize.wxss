@@ -30,6 +30,20 @@ page {
 .subtitle {
   font-size: 28rpx;
   color: #666;
+  margin-bottom: 16rpx;
+}
+
+/* API额度显示 */
+.api-quota {
+  width: 80%;
+  margin: 20rpx auto 10rpx;
+}
+
+.quota-text {
+  font-size: 24rpx;
+  color: #888;
+  margin-top: 8rpx;
+  display: block;
 }
 
 /* 上传区域样式 */
@@ -47,10 +61,23 @@ page {
   border: 2rpx dashed #ddd;
 }
 
-.upload-icon {
+/* 图标占位符 */
+.upload-icon-placeholder {
   width: 120rpx;
   height: 120rpx;
   margin-bottom: 20rpx;
+  border-radius: 50%;
+  background-color: #f2f2f2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px dashed #ccc;
+}
+
+.icon-text {
+  font-size: 60rpx;
+  color: #07c160;
+  font-weight: lighter;
 }
 
 .upload-text {
@@ -76,8 +103,30 @@ page {
   width: 100%;
   height: 400rpx;
   border-radius: 16rpx;
-  margin-bottom: 30rpx;
+  margin-bottom: 20rpx;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+}
+
+/* 进度条样式 */
+.progress-container {
+  width: 100%;
+  margin: 10rpx 0 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.progress-text {
+  font-size: 26rpx;
+  color: #07c160;
+  margin-bottom: 8rpx;
+}
+
+.progress-percentage {
+  font-size: 24rpx;
+  color: #666;
+  margin-top: 8rpx;
 }
 
 /* 自定义提示输入区 */
@@ -100,6 +149,11 @@ page {
 .toggle-icon {
   width: 36rpx;
   height: 36rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #666;
+  font-size: 24rpx;
 }
 
 .prompt-input-area {
@@ -166,7 +220,7 @@ page {
 /* 加载状态 */
 .loading-container {
   width: 100%;
-  height: 500rpx;
+  padding: 40rpx 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -191,6 +245,7 @@ page {
 .loading-text {
   font-size: 30rpx;
   color: #666;
+  margin-bottom: 20rpx;
 }
 
 /* 结果展示 */
@@ -205,6 +260,7 @@ page {
   height: 350rpx;
   border-radius: 16rpx;
   margin-bottom: 30rpx;
+  object-fit: contain;
 }
 
 .result-segments {
@@ -224,12 +280,15 @@ page {
   font-weight: bold;
   color: #333;
   margin-bottom: 12rpx;
+  display: block;
 }
 
 .segment-content {
   font-size: 26rpx;
   color: #666;
   line-height: 1.5;
+  display: block;
+  white-space: pre-wrap;
 }
 
 .objects-list {

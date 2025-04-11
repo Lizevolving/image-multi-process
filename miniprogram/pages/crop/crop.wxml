@@ -45,7 +45,8 @@
   
   <!-- 裁剪提示 -->
   <view class="crop-tip">
-    <text>单指拖动调整位置，双指缩放调整大小</text>
+    <text>移动和缩放照片，使人像处于白框内</text>
+    <text class="crop-sub-tip">单指拖动调整位置，双指缩放调整大小</text>
   </view>
   
   <!-- 底部操作按钮 -->

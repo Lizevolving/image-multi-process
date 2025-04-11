@@ -55,8 +55,8 @@ Page({
     
     this.setData({
       imagePath: decodeURIComponent(image),
-      targetWidth: parseInt(width) || 295, // 默认一寸照宽度
-      targetHeight: parseInt(height) || 413, // 默认一寸照高度
+      targetWidth: parseInt(width || '295'), // 默认一寸照宽度
+      targetHeight: parseInt(height || '413'), // 默认一寸照高度
       screenWidth: windowWidth,
       screenHeight: windowHeight
     });
@@ -91,8 +91,8 @@ Page({
     const { screenWidth, screenHeight, targetWidth, targetHeight } = this.data;
     
     // 确定裁剪框的尺寸（保持原始比例）
-    const maxCropperWidth = screenWidth * 0.8;
-    const maxCropperHeight = screenHeight * 0.5;
+    let maxCropperWidth = screenWidth * 0.85;
+    let maxCropperHeight = screenHeight * 0.6;
     
     // 计算裁剪框实际尺寸（等比例缩放）
     let cropperWidth, cropperHeight;
@@ -109,11 +109,11 @@ Page({
     
     // 计算裁剪框的位置（居中）
     const cropperLeft = (screenWidth - cropperWidth) / 2;
-    const cropperTop = (screenHeight - cropperHeight) / 2;
+    const cropperTop = (screenHeight - cropperHeight) / 3; // 上移一点，让操作空间更大
     
     // 计算图片缩放比例
-    const scaleX = cropperWidth / imgWidth;
-    const scaleY = cropperHeight / imgHeight;
+    const scaleX = cropperWidth / imgWidth * 1.5; // 放大一点以便移动调整
+    const scaleY = cropperHeight / imgHeight * 1.5;
     const imageScale = Math.max(scaleX, scaleY); // 填充裁剪框
     
     // 计算图片的显示位置（初始位置：居中）
@@ -207,7 +207,7 @@ Page({
         this.data.cropperWidth / this.data.imageWidth,
         this.data.cropperHeight / this.data.imageHeight
       );
-      const maxScale = minScale * 3; // 最大缩放为最小所需缩放的3倍
+      const maxScale = minScale * 5; // 最大缩放为最小所需缩放的5倍
       
       if (newScale >= minScale && newScale <= maxScale) {
         // 计算缩放后图片的位置调整
@@ -247,69 +247,86 @@ Page({
       mask: true
     });
     
-    // 创建裁剪器上下文
-    const ctx = wx.createCanvasContext('cropCanvas');
-    
-    // 获取裁剪框相对于图片的位置和尺寸
-    const { 
-      imagePath, imageWidth, imageHeight, imageScale, 
-      imageLeft, imageTop, cropperLeft, cropperTop, 
-      cropperWidth, cropperHeight, targetWidth, targetHeight 
-    } = this.data;
-    
-    // 计算裁剪区域在原图上的对应位置
-    const sourceX = (cropperLeft - imageLeft) / imageScale;
-    const sourceY = (cropperTop - imageTop) / imageScale;
-    const sourceWidth = cropperWidth / imageScale;
-    const sourceHeight = cropperHeight / imageScale;
-    
-    // 绘制裁剪后的图像
-    ctx.drawImage(
-      imagePath,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      0,
-      0,
-      targetWidth,
-      targetHeight
-    );
-    
-    ctx.draw(false, () => {
-      // 导出裁剪后的图片
-      wx.canvasToTempFilePath({
-        canvasId: 'cropCanvas',
-        x: 0,
-        y: 0,
-        width: targetWidth,
-        height: targetHeight,
-        destWidth: targetWidth,
-        destHeight: targetHeight,
-        success: (res) => {
-          wx.hideLoading();
-          
-          // 将裁剪后的图片传回上一页
-          const pages = getCurrentPages();
-          const prevPage = pages[pages.length - 2]; // 上一页
-          
-          if (prevPage && prevPage.onImageCropped) {
-            prevPage.onImageCropped(res.tempFilePath);
-          }
-          
-          wx.navigateBack();
-        },
-        fail: (err) => {
-          console.error('导出裁剪图片失败', err);
-          wx.hideLoading();
-          
-          wx.showToast({
-            title: '裁剪失败',
-            icon: 'error'
+    try {
+      // 创建裁剪器上下文
+      const ctx = wx.createCanvasContext('cropCanvas');
+      
+      // 获取裁剪框相对于图片的位置和尺寸
+      const { 
+        imagePath, imageWidth, imageHeight, imageScale, 
+        imageLeft, imageTop, cropperLeft, cropperTop, 
+        cropperWidth, cropperHeight, targetWidth, targetHeight 
+      } = this.data;
+      
+      // 计算裁剪区域在原图上的对应位置
+      const sourceX = (cropperLeft - imageLeft) / imageScale;
+      const sourceY = (cropperTop - imageTop) / imageScale;
+      const sourceWidth = cropperWidth / imageScale;
+      const sourceHeight = cropperHeight / imageScale;
+      
+      // 确保裁剪参数有效
+      if (sourceX < 0 || sourceY < 0 || sourceX + sourceWidth > imageWidth || sourceY + sourceHeight > imageHeight) {
+        console.warn('裁剪区域超出图片范围，将自动调整');
+      }
+      
+      // 绘制裁剪后的图像
+      ctx.drawImage(
+        imagePath,
+        Math.max(0, sourceX),
+        Math.max(0, sourceY),
+        Math.min(sourceWidth, imageWidth - Math.max(0, sourceX)),
+        Math.min(sourceHeight, imageHeight - Math.max(0, sourceY)),
+        0,
+        0,
+        targetWidth,
+        targetHeight
+      );
+      
+      ctx.draw(false, () => {
+        setTimeout(() => {
+          // 导出裁剪后的图片
+          wx.canvasToTempFilePath({
+            canvasId: 'cropCanvas',
+            x: 0,
+            y: 0,
+            width: targetWidth,
+            height: targetHeight,
+            destWidth: targetWidth,
+            destHeight: targetHeight,
+            success: (res) => {
+              wx.hideLoading();
+              
+              // 将裁剪后的图片传回上一页
+              const pages = getCurrentPages();
+              const prevPage = pages[pages.length - 2]; // 上一页
+              
+              if (prevPage && prevPage.onImageCropped) {
+                prevPage.onImageCropped(res.tempFilePath);
+              }
+              
+              wx.navigateBack();
+            },
+            fail: (err) => {
+              console.error('导出裁剪图片失败', err);
+              wx.hideLoading();
+              
+              wx.showToast({
+                title: '裁剪失败',
+                icon: 'error'
+              });
+            }
           });
-        }
+        }, 200); // 添加延时确保canvas已绘制完成
       });
-    });
+    } catch (error) {
+      console.error('裁剪过程出错', error);
+      wx.hideLoading();
+      
+      wx.showToast({
+        title: '裁剪失败',
+        icon: 'error'
+      });
+    }
   },
   
   // 取消裁剪

@@ -1,12 +1,8 @@
 <!--background.wxml-->
 <view class="container">
   <view class="header">
-    <view class="title">抠图去背景</view>
-    <view class="subtitle">一键去除图片背景</view>
+    <text class="title">智能抠图</text>
   </view>
-  
-  <!-- 更简洁的功能提示，只保留一个小提示链接 -->
-  <view class="tip-text" bindtap="goToServer">点击了解更多</view>
   
   <!-- 配额信息更简洁展示 -->
   <view class="quota-info" wx:if="{{quotaInfo}}">

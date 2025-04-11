@@ -9,7 +9,7 @@ const DEFAULT_API_KEY = 'TrSfg7escwbcAKvHZ36M6mes';
 
 // API限额监控
 const API_QUOTA = {
-  total: 50,  // 假设总额度为50次
+  total: 30,  // 每日总额度为30次
   used: 0,    // 已使用次数
   resetDate: new Date().toISOString().split('T')[0]  // 重置日期
 };
@@ -34,12 +34,35 @@ export function getAPIQuota() {
 }
 
 /**
- * 更新API使用量
+ * 更新API使用量并显示友好提示
  */
 function updateAPIUsage() {
   const quota = getAPIQuota();
   quota.used += 1;
   wx.setStorageSync('api_quota', quota);
+  
+  // 在达到特定次数时显示友好提示
+  if (quota.used === 10) {
+    wx.showToast({
+      title: '今日已完成10次图像处理',
+      icon: 'none',
+      duration: 2000
+    });
+  } else if (quota.used === 20) {
+    wx.showToast({
+      title: '今日已完成20次图像处理',
+      icon: 'none',
+      duration: 2000
+    });
+  } else if (quota.used === 30) {
+    wx.showModal({
+      title: '提示',
+      content: '今日图像处理次数已用完，请明天再试',
+      showCancel: false
+    });
+  }
+  
+  return quota;
 }
 
 /**
@@ -68,6 +91,12 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
       return;
     }
 
+    // 显示加载提示
+    wx.showLoading({
+      title: '处理中...',
+      mask: true
+    });
+
     // 压缩图片再上传，提高性能
     compressImage(imagePath).then(compressedPath => {
       wx.uploadFile({
@@ -78,7 +107,8 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
           'X-Api-Key': apiKey
         },
         formData: {
-          size: size
+          size: size,
+          format: 'png'
         },
         timeout: 30000,  // 30秒超时
         success: (res) => {
@@ -86,37 +116,64 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
             // 更新API使用量
             updateAPIUsage();
             
-            // 保存返回的图片数据
-            // res.data 包含返回的图片数据，但在 wx.uploadFile 中返回的是字符串
-            // 我们需要将其转为临时文件
-            const fs = wx.getFileSystemManager();
-            const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_${Date.now()}.png`;
-            
             try {
-              fs.writeFileSync(
-                tempFilePath,
-                res.data,
-                'binary' // 以二进制方式写入
-              );
+              // 获取文件系统管理器，用于文件操作
+              const fs = wx.getFileSystemManager();
               
-              // 保存到相册
-              wx.saveFile({
-                tempFilePath: tempFilePath,
-                success: (saved) => {
-                  resolve(saved.savedFilePath);
+              // 为图片创建一个唯一的临时路径
+              const timestamp = Date.now();
+              const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_${timestamp}.png`;
+              
+              // 直接将返回的二进制数据写入文件
+              // 不尝试解析JSON，因为remove.bg API通常直接返回图片数据
+              fs.writeFile({
+                filePath: tempFilePath,
+                data: res.data,
+                encoding: 'binary', // 尝试使用binary编码，而不是base64
+                success: () => {
+                  // 使用文件系统的saveFile而不是wx.saveFile
+                  const savedFilePath = `${wx.env.USER_DATA_PATH}/bg_removed_${timestamp}.png`;
+                  
+                  fs.saveFile({
+                    tempFilePath: tempFilePath,
+                    filePath: savedFilePath,
+                    success: () => {
+                      // 隐藏加载提示
+                      wx.hideLoading();
+                      resolve(savedFilePath);
+                      
+                      // 清理临时文件
+                      fs.unlink({
+                        filePath: tempFilePath,
+                        fail: (err) => {
+                          console.warn('清理临时文件失败', err);
+                        }
+                      });
+                    },
+                    fail: (err) => {
+                      console.error('保存文件失败', err);
+                      wx.hideLoading();
+                      
+                      // 尝试直接返回临时文件路径
+                      resolve(tempFilePath);
+                    }
+                  });
                 },
                 fail: (err) => {
-                  console.error('保存图片失败', err);
-                  reject(err);
+                  console.error('写入文件失败', err);
+                  wx.hideLoading();
+                  reject(new Error('处理图片数据失败: ' + err.errMsg));
                 }
               });
             } catch (err) {
-              console.error('写入文件失败', err);
+              console.error('处理返回数据失败', err);
+              wx.hideLoading();
               reject(new Error('处理图片数据失败'));
             }
           } else {
             // 处理API错误
             let errorMsg = '抠图处理失败';
+            wx.hideLoading();
             
             try {
               const error = JSON.parse(res.data);
@@ -139,6 +196,7 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
         },
         fail: (err) => {
           console.error('API请求失败', err);
+          wx.hideLoading();
           let errorMsg = '网络请求失败';
           
           if (err.errMsg.includes('timeout')) {
@@ -149,6 +207,7 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
         }
       });
     }).catch(err => {
+      wx.hideLoading();
       reject(err);
     });
   });

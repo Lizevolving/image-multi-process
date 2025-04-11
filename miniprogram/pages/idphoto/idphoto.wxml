@@ -1,8 +1,7 @@
 <!--idphoto.wxml-->
 <view class="container">
   <view class="header">
-    <view class="title">证件照制作</view>
-    <view class="subtitle">快速制作标准证件照</view>
+    <text class="title">证件照制作</text>
   </view>
   
   <!-- 选择尺寸和背景色步骤 -->
@@ -78,8 +77,8 @@
         <text class="result-size">{{selectedSize.name}} ({{selectedSize.desc}})</text>
       </view>
       
-      <view class="id-photo-preview">
-        <image class="id-photo-image" src="{{resultImage}}" mode="aspectFit"></image>
+      <view class="idphoto-preview">
+        <image class="idphoto-image" src="{{resultImage}}" mode="aspectFit"></image>
       </view>
       
       <view class="action-buttons">
@@ -89,7 +88,7 @@
         <button class="action-button secondary" bindtap="regenerate">
           <text>更换背景色</text>
         </button>
-        <button class="action-button primary" bindtap="saveIdPhoto">
+        <button class="action-button primary" bindtap="saveidphoto">
           <text>保存到相册</text>
         </button>
       </view>
@@ -104,9 +103,6 @@
     </view>
   </block>
   
-  <!-- 返回按钮 -->
-  <view class="back-button" bindtap="goBack" wx:if="{{currentStep !== 'select'}}">返回</view>
-  
   <!-- 用于图片合成的Canvas，设置为不可见 -->
-  <canvas canvas-id="idPhotoCanvas" style="width: {{selectedSize.width}}px; height: {{selectedSize.height}}px; position: absolute; left: -9999px;"></canvas>
+  <canvas canvas-id="idphotoCanvas" style="width: {{selectedSize.width}}px; height: {{selectedSize.height}}px; position: absolute; left: -9999px;"></canvas>
 </view> 

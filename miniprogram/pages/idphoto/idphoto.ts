@@ -34,7 +34,7 @@ Page({
     
     // 状态控制
     isProcessing: false,
-    currentStep: 'select', // select, crop, result
+    currentStep: 'select', // select, crop, process, result
     
     // API配额信息
     quotaInfo: null,
@@ -46,6 +46,9 @@ Page({
     // 裁剪相关
     cropperVisible: false
   },
+
+  // 定义超时定时器ID
+  timeoutTimer: null as any,
 
   onLoad() {
     console.log('证件照制作页面加载');
@@ -69,7 +72,7 @@ Page({
   },
   
   // 选择尺寸
-  selectSize(e) {
+  selectSize(e: WechatMiniprogram.TouchEvent) {
     const sizeId = e.currentTarget.dataset.id;
     const selectedSize = SIZE_OPTIONS.find(item => item.id === sizeId);
     
@@ -79,7 +82,7 @@ Page({
   },
   
   // 选择背景色
-  selectColor(e) {
+  selectColor(e: WechatMiniprogram.TouchEvent) {
     const colorId = e.currentTarget.dataset.id;
     const selectedColor = COLOR_OPTIONS.find(item => item.id === colorId);
     
@@ -120,7 +123,7 @@ Page({
   },
   
   // 接收裁剪后的图片（由crop页面回传）
-  onImageCropped(croppedImage) {
+  onImageCropped(croppedImage: string) {
     this.setData({
       croppedImage,
       currentStep: 'process'
@@ -145,7 +148,13 @@ Page({
       wx.showModal({
         title: 'API调用限制',
         content: '今日API调用次数已达上限，请明天再试',
-        showCancel: false
+        showCancel: false,
+        success: () => {
+          // 返回选择页面
+          this.setData({
+            currentStep: 'select'
+          });
+        }
       });
       return;
     }
@@ -159,16 +168,54 @@ Page({
       mask: true
     });
     
+    // 设置15秒超时定时器
+    this.clearTimeoutTimer(); // 先清除可能存在的旧定时器
+    this.timeoutTimer = setTimeout(() => {
+      if (this.data.isProcessing) {
+        wx.hideLoading();
+        this.setData({
+          isProcessing: false,
+          currentStep: 'select' // 超时返回选择页面
+        });
+        wx.showModal({
+          title: '处理超时',
+          content: '图片处理时间过长，请稍后重试',
+          showCancel: false
+        });
+      }
+    }, 15000);
+
+    // 10秒后提示耐心等待
+    setTimeout(() => {
+      if (this.data.isProcessing) {
+        wx.showToast({
+          title: '处理中，请耐心等待',
+          icon: 'none',
+          duration: 2000
+        });
+      }
+    }, 10000);
+    
     // 1. 先去除背景
     removeBackground(this.data.croppedImage)
       .then(noBackgroundImage => {
+        // 清除超时定时器
+        this.clearTimeoutTimer();
+        
+        // 检查是否仍在处理状态（可能已被超时中断）
+        if (!this.data.isProcessing) return;
+        
         // 2. 合成指定尺寸和背景色的证件照
-        this.generateIdPhoto(noBackgroundImage);
+        this.generateidphoto(noBackgroundImage);
       })
       .catch(error => {
+        // 清除超时定时器
+        this.clearTimeoutTimer();
+        
         console.error('抠图失败:', error);
         this.setData({
-          isProcessing: false
+          isProcessing: false,
+          currentStep: 'select' // 失败时返回到选择页面
         });
         
         // 更新配额信息
@@ -185,13 +232,13 @@ Page({
   },
   
   // 生成证件照
-  generateIdPhoto(noBackgroundImage) {
+  generateidphoto(noBackgroundImage: string) {
     const { selectedSize, selectedColor } = this.data;
     const { width, height } = selectedSize;
     
     try {
       // 创建离屏canvas合成证件照
-      const ctx = wx.createCanvasContext('idPhotoCanvas');
+      const ctx = wx.createCanvasContext('idphotoCanvas');
       
       // 绘制背景色
       ctx.fillStyle = selectedColor.color;
@@ -231,10 +278,10 @@ Page({
           try {
             ctx.draw(false, () => {
               // 导出为图片
-              setTimeout(() => { // 添加延时，确保绘制完成
+              setTimeout(() => {
                 try {
                   wx.canvasToTempFilePath({
-                    canvasId: 'idPhotoCanvas',
+                    canvasId: 'idphotoCanvas',
                     x: 0,
                     y: 0,
                     width: width,
@@ -242,6 +289,8 @@ Page({
                     destWidth: width * (this.data.resolution === 'high' ? 3 : 1),
                     destHeight: height * (this.data.resolution === 'high' ? 3 : 1),
                     success: (res) => {
+                      // 清除超时定时器
+                      this.clearTimeoutTimer();
                       this.setData({
                         resultImage: res.tempFilePath,
                         currentStep: 'result',
@@ -254,39 +303,51 @@ Page({
                       wx.hideLoading();
                     },
                     fail: (err) => {
+                      // 清除超时定时器
+                      this.clearTimeoutTimer();
                       console.error('生成证件照失败', err);
                       this.handleCanvasError(noBackgroundImage);
                     }
                   });
                 } catch (error) {
+                  // 清除超时定时器
+                  this.clearTimeoutTimer();
                   console.error('Canvas操作异常', error);
                   this.handleCanvasError(noBackgroundImage);
                 }
               }, 300);
             });
           } catch (error) {
+            // 清除超时定时器
+            this.clearTimeoutTimer();
             console.error('Canvas绘制异常', error);
             this.handleCanvasError(noBackgroundImage);
           }
         },
         fail: (err) => {
+          // 清除超时定时器
+          this.clearTimeoutTimer();
           console.error('获取图片信息失败', err);
           this.handleCanvasError(noBackgroundImage);
         }
       });
     } catch (error) {
+      // 清除超时定时器
+      this.clearTimeoutTimer();
       console.error('Canvas创建异常', error);
       this.handleCanvasError(noBackgroundImage);
     }
   },
   
   // 处理Canvas错误的回退方案
-  handleCanvasError(noBackgroundImage) {
+  handleCanvasError(noBackgroundImage: string) {
+    // 清除超时定时器
+    this.clearTimeoutTimer();
     // Canvas操作失败时，直接使用抠图结果
     this.setData({
       resultImage: noBackgroundImage,
-      currentStep: 'result',
-      isProcessing: false
+      isProcessing: false,
+      currentStep: 'result'
     });
     
     // 更新配额信息
@@ -298,6 +359,14 @@ Page({
       title: '已完成基础处理',
       icon: 'success'
     });
+  },
+  
+  // 清除超时定时器的辅助函数
+  clearTimeoutTimer() {
+    if (this.timeoutTimer) {
+      clearTimeout(this.timeoutTimer);
+      this.timeoutTimer = null;
+    }
   },
   
   // 重新裁剪
@@ -324,7 +393,7 @@ Page({
   },
   
   // 保存证件照
-  saveIdPhoto() {
+  saveidphoto() {
     if (!this.data.resultImage) {
       wx.showToast({
         title: '请先生成证件照',
@@ -354,7 +423,7 @@ Page({
                 wx.openSetting({
                   success: (settingRes) => {
                     if (settingRes.authSetting['scope.writePhotosAlbum']) {
-                      this.saveIdPhoto(); // 重新尝试保存
+                      this.saveidphoto(); // 重新尝试保存
                     } else {
                       wx.showToast({
                         title: '授权失败',
@@ -378,6 +447,13 @@ Page({
   
   // 返回首页
   goBack() {
+    // 离开页面时清除定时器
+    this.clearTimeoutTimer();
     wx.navigateBack();
+  },
+
+  onUnload() {
+    // 页面卸载时确保清除定时器
+    this.clearTimeoutTimer();
   }
 }) 

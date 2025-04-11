@@ -195,13 +195,4 @@ Page({
       })
     }
   },
-  
-  // 跳转到服务器说明 - 简化展示内容
-  goToServer() {
-    wx.showModal({
-      title: '功能说明',
-      content: '本功能用于快速去除图片背景，每日可使用' + this.data.quotaInfo.total + '次，今日已使用' + this.data.quotaInfo.used + '次',
-      showCancel: false
-    })
-  }
-}) 
+})
