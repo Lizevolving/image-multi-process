@@ -1,15 +1,15 @@
 <!--idphoto.wxml-->
 <view class="container">
   <view class="header">
-    <text class="title">证件照制作</text>
+    <!-- <text class="title">证件照制作</text> -->
   </view>
   
   <!-- 选择尺寸和背景色步骤 -->
   <block wx:if="{{currentStep === 'select'}}">
     <!-- 配额信息 -->
-    <view class="quota-info" wx:if="{{quotaInfo}}">
+    <!-- <view class="quota-info" wx:if="{{quotaInfo}}">
       <progress percent="{{quotaInfo.used / quotaInfo.total * 100}}" stroke-width="3" activeColor="#3f51b5" backgroundColor="#e8eaf6" />
-    </view>
+    </view> -->
     
     <view class="section-title">尺寸</view>
     <view class="size-options-grid">
@@ -91,14 +91,6 @@
         <button class="action-button primary" bindtap="saveidphoto">
           <text>保存到相册</text>
         </button>
-      </view>
-      
-      <view class="note-box">
-        <view class="note-content">
-          <text>· 证件照已完成防打印检测优化</text>
-          <text>· {{resolution === 'high' ? '高清模式：适合打印' : '标准模式：适合电子使用'}}</text>
-          <text>· 背景颜色：{{selectedColor.name}}</text>
-        </view>
       </view>
     </view>
   </block>

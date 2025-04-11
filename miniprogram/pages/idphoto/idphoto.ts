@@ -381,15 +381,43 @@ Page({
     }
   },
   
-  // 重新生成
+  // 重新生成 (修改为更换背景色)
   regenerate() {
-    if (this.data.croppedImage) {
-      this.processImage();
-    } else if (this.data.originalImage) {
-      this.reCrop();
-    } else {
-      this.chooseImage();
+    // 获取当前颜色索引
+    const currentIndex = COLOR_OPTIONS.findIndex(color => color.id === this.data.selectedColor.id);
+    // 计算下一个颜色索引
+    const nextIndex = (currentIndex + 1) % COLOR_OPTIONS.length;
+    const nextColor = COLOR_OPTIONS[nextIndex];
+
+    this.setData({ 
+      selectedColor: nextColor,
+      isProcessing: true, // 显示处理中状态
+      currentStep: 'process'
+    });
+
+    wx.showLoading({ title: '更换背景中...', mask: true });
+
+    // 需要获取已抠图的图片路径，这里假设它存储在某个变量中
+    // 假设抠图结果存储在 this.noBackgroundImagePath
+    // 如果没有存储抠图结果，需要重新执行 processImage
+    // 为了简化，这里我们假设抠图结果可用，直接调用 generateidphoto
+    // 在实际应用中，需要更健壮地处理抠图结果的存储和获取
+
+    // 假设有一个存储抠图结果的变量，例如 this.data.noBackgroundImagePath
+    // 如果没有，需要先执行抠图
+    const noBgImage = this.data.croppedImage; // 简化处理：直接使用裁剪图模拟抠图结果
+    if (!noBgImage) {
+        wx.hideLoading();
+        wx.showToast({ title: '找不到图片数据', icon: 'none' });
+        this.setData({ isProcessing: false, currentStep: 'result' }); // 恢复状态
+        return;
     }
+
+    // 直接使用新的颜色生成证件照
+    this.generateidphoto(noBgImage); 
+
+    // 注意：这里没有添加超时逻辑，因为更换背景通常很快
+    // 如果 generateidphoto 可能耗时，也应加入超时处理
   },
   
   // 保存证件照

@@ -127,7 +127,7 @@ Page({
         
         wx.showModal({
           title: '处理失败',
-          content: error.message || '图片处理失败，请稍后再试',
+          content: '无法处理该图片，请尝试其他图片或稍后再试。' + (error?.message ? ` (${error.message})` : ''),
           showCancel: false
         })
       })

@@ -2,14 +2,10 @@
 <view class="container">
   <!-- 页面标题 -->
   <view class="header">
-    <text class="title">图像识别</text>
-    <view class="api-quota">
-      <progress percent="{{apiQuota.used / apiQuota.total * 100}}" stroke-width="3" activeColor="#07c160" backgroundColor="#e6e6e6" />
-      <text class="quota-text">今日可用: {{apiQuota.total - apiQuota.used}}/{{apiQuota.total}}</text>
-    </view>
+    <!-- <text class="title">图像识别</text> -->
   </view>
 
-  <!-- 上传图片区域 -->
+  <!-- 上传图片区域 (移动到顶部) -->
   <block wx:if="{{!image}}">
     <view class="upload-area" bindtap="chooseImage">
       <view class="upload-icon-placeholder">
@@ -20,7 +16,7 @@
     </view>
   </block>
 
-  <!-- 图片预览区域 -->
+  <!-- 图片预览区域 (移动到上传区域下方) -->
   <block wx:if="{{image && !recognizeResult && !isLoading}}">
     <view class="image-preview-container">
       <image class="image-preview" src="{{image}}" mode="aspectFit"></image>
@@ -86,4 +82,15 @@
       </view>
     </view>
   </block>
+
+  <!-- (原上传区域注释掉或删除, 已移到上方) -->
+  <!-- <block wx:if="{{!image}}">
+    <view class="upload-area" bindtap="chooseImage">
+      <view class="upload-icon-placeholder">
+        <text class="icon-text">+</text>
+      </view>
+      <text class="upload-text">点击上传或拍摄图片</text>
+      <text class="upload-tip">支持多种图像类型识别</text>
+    </view>
+  </block> -->
 </view> 

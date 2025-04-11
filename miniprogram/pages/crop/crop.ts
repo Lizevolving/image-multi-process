@@ -87,7 +87,7 @@ Page({
   },
   
   // 初始化裁剪框尺寸和位置
-  initCropperSize(imgWidth, imgHeight) {
+  initCropperSize(imgWidth: number, imgHeight: number) {
     const { screenWidth, screenHeight, targetWidth, targetHeight } = this.data;
     
     // 确定裁剪框的尺寸（保持原始比例）
@@ -136,7 +136,7 @@ Page({
   },
   
   // 触摸开始
-  touchStart(e) {
+  touchStart(e: WechatMiniprogram.TouchEvent) {
     const touches = e.touches;
     
     // 记录触摸起始点
@@ -170,7 +170,7 @@ Page({
   },
   
   // 触摸移动
-  touchMove(e) {
+  touchMove(e: WechatMiniprogram.TouchEvent) {
     const touches = e.touches;
     
     if (touches.length === 1 && this.data.isMoving) {

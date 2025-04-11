@@ -76,7 +76,7 @@ page {
 
 .icon-text {
   font-size: 60rpx;
-  color: #07c160;
+  color: #ff9800;
   font-weight: lighter;
 }
 
@@ -119,7 +119,7 @@ page {
 
 .progress-text {
   font-size: 26rpx;
-  color: #07c160;
+  color: #ff9800;
   margin-bottom: 8rpx;
 }
 
@@ -207,7 +207,7 @@ page {
 }
 
 .primary {
-  background-color: #07c160;
+  background-color: #ff9800;
   color: #fff;
 }
 
@@ -231,7 +231,7 @@ page {
   width: 80rpx;
   height: 80rpx;
   border: 6rpx solid #f3f3f3;
-  border-top: 6rpx solid #07c160;
+  border-top: 6rpx solid #ff9800;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 30rpx;

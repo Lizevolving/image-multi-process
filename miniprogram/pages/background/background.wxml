@@ -1,13 +1,13 @@
 <!--background.wxml-->
 <view class="container">
   <view class="header">
-    <text class="title">智能抠图</text>
+    <!-- <text class="title">智能抠图</text> -->
   </view>
   
   <!-- 配额信息更简洁展示 -->
-  <view class="quota-info" wx:if="{{quotaInfo}}">
+  <!-- <view class="quota-info" wx:if="{{quotaInfo}}">
     <progress percent="{{quotaInfo.used / quotaInfo.total * 100}}" stroke-width="3" activeColor="#2ecc71" backgroundColor="#e8f5e9" />
-  </view>
+  </view> -->
   
   <view class="image-container">
     <block wx:if="{{!imageUrl}}">

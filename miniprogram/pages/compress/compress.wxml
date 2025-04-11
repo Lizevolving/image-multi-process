@@ -1,7 +1,7 @@
 <!--compress.wxml-->
 <view class="container">
   <view class="header">
-    <text class="title">图片压缩</text>
+    <!-- <text class="title">图片压缩</text> -->
   </view>
   
   <view class="image-container">
@@ -23,27 +23,43 @@
   <block wx:if="{{imageUrl}}">
     <view class="compress-options">
       <view class="slider-container">
-        <text class="slider-label">压缩级别: {{compressLevel}}%</text>
+        <text class="slider-label">质量等级: {{compressLevel}}%</text>
         <slider min="10" max="90" value="{{compressLevel}}" activeColor="#3498db" backgroundColor="#e0e0e0" block-size="20" block-color="#ffffff" bindchange="changeCompressLevel" />
       </view>
       <button class="compress-button" bindtap="compressImage" loading="{{isCompressing}}">{{isCompressing ? '压缩中...' : '开始压缩'}}</button>
     </view>
   </block>
   
-  <block wx:if="{{compressedImageUrl}}">
+  <block wx:if="{{compressedImageUrl || compressionStatus === 'failed'}}">
     <view class="result-container">
-      <view class="result-title">压缩结果</view>
-      <image class="compressed-image" src="{{compressedImageUrl}}" mode="aspectFit" bindtap="previewImage"></image>
-      <view class="image-info">
+      <view class="result-title">{{compressionStatus === 'failed' ? '压缩失败' : '压缩结果'}}</view>
+      
+      <view class="error-message" wx:if="{{compressionStatus === 'failed'}}">
+        <text>{{errorMessage}}</text>
+        <text>（显示未压缩原图）</text>
+      </view>
+
+      <image 
+        class="compressed-image"
+        src="{{compressionStatus === 'failed' ? imageUrl : compressedImageUrl}}" 
+        mode="aspectFit" 
+        bindtap="previewImage">
+      </image>
+
+      <view class="image-info" wx:if="{{compressionStatus !== 'failed'}}">
         <text>压缩后大小: {{compressedSize / 1024 | 0}} KB</text>
         <text class="compression-rate">压缩率: {{compressionRate}}%</text>
       </view>
-      <view class="button-group">
+      <view class="button-group" wx:if="{{compressionStatus !== 'failed'}}">
         <button class="save-button" bindtap="saveImage">保存到相册</button>
         <button class="preview-button" bindtap="previewImage">预览图片</button>
       </view>
     </view>
   </block>
+  
+  <view class="system-hint">
+    提示：建议使用系统相册自带的压缩功能（通常在编辑或分享菜单中）。
+  </view>
   
   <!-- 用于压缩的Canvas，设置为不可见 -->
   <canvas canvas-id="compressCanvas" style="width: 0px; height: 0px; position: absolute; left: -9999px;"></canvas>

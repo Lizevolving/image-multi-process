@@ -8,6 +8,22 @@
 
 ## 4.11
 
+
+（问题可能出在调用？）
+Background Page Functionality Fix
+The "no such file or directory" error often points to issues with temporary file paths becoming invalid or being cleaned up prematurely, or incorrect path handling between steps. The create bitmap failed error (mentioned in your log but related to compress.ts) suggests issues with the Canvas API, possibly due to unsupported image formats or memory limits.
+Since the background.ts timeout logic application failed repeatedly, I'll focus on adding robust error handling and feedback for the existing removeBackground function call within its catch block, aiming to show a user-friendly message and avoid blank output. I won't add file existence checks before the API call itself, as the primary failure seems to happen during the API call or immediately after.
+
+
+
+
+（hhh，忤逆我）
+ Ignore a warning: 
+ Acknowledge the warning about the URL and confirm it won't be modified.
+
+
+这里注意。给API的Prompt还可以再优化：让他给出纯文本，不要列点式，不要有markdown符号。
+
 [pages/recognize/recognize]  提示： text 组件包含了长文本，可以考虑增加 user-select 属性，方便用户复制。
 
 1042，此提示，谁给我的？？
