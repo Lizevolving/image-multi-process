@@ -1,5 +1,5 @@
 // idphoto.ts
-import { removeBackground, getAPIQuota, checkAPIQuota } from '../../services/backgroundService';
+import { removeBackground, getAPIQuota, checkAPIQuota, startTimeoutMonitor, stopTimeoutMonitor } from '../../services/backgroundService';
 
 // 定义尺寸选项
 const SIZE_OPTIONS = [
@@ -47,7 +47,7 @@ Page({
     cropperVisible: false
   },
 
-  // 定义超时定时器ID
+  // 定义超时定时器
   timeoutTimer: null as any,
 
   onLoad() {
@@ -133,6 +133,15 @@ Page({
     this.processImage();
   },
   
+  // 添加：处理裁剪取消
+  onCropCanceled() {
+    console.log('裁剪已取消');
+    // 回到选择页面
+    this.setData({
+      currentStep: 'select'
+    });
+  },
+  
   // 处理图片（抠图并合成）
   processImage() {
     if (!this.data.croppedImage) {
@@ -168,39 +177,20 @@ Page({
       mask: true
     });
     
-    // 设置15秒超时定时器
-    this.clearTimeoutTimer(); // 先清除可能存在的旧定时器
-    this.timeoutTimer = setTimeout(() => {
-      if (this.data.isProcessing) {
-        wx.hideLoading();
-        this.setData({
-          isProcessing: false,
-          currentStep: 'select' // 超时返回选择页面
-        });
-        wx.showModal({
-          title: '处理超时',
-          content: '图片处理时间过长，请稍后重试',
-          showCancel: false
-        });
-      }
-    }, 15000);
-
-    // 10秒后提示耐心等待
-    setTimeout(() => {
-      if (this.data.isProcessing) {
-        wx.showToast({
-          title: '处理中，请耐心等待',
-          icon: 'none',
-          duration: 2000
-        });
-      }
-    }, 10000);
+    // 使用统一的超时监控机制
+    startTimeoutMonitor(() => {
+      // 超时强制退出
+      this.setData({
+        isProcessing: false,
+        currentStep: 'select' // 超时返回选择页面
+      });
+    });
     
     // 1. 先去除背景
     removeBackground(this.data.croppedImage)
       .then(noBackgroundImage => {
-        // 清除超时定时器
-        this.clearTimeoutTimer();
+        // 清除超时监控
+        stopTimeoutMonitor();
         
         // 检查是否仍在处理状态（可能已被超时中断）
         if (!this.data.isProcessing) return;
@@ -209,8 +199,8 @@ Page({
         this.generateidphoto(noBackgroundImage);
       })
       .catch(error => {
-        // 清除超时定时器
-        this.clearTimeoutTimer();
+        // 清除超时监控
+        stopTimeoutMonitor();
         
         console.error('抠图失败:', error);
         this.setData({
@@ -237,6 +227,15 @@ Page({
     const { width, height } = selectedSize;
     
     try {
+      // 启动超时监控
+      startTimeoutMonitor(() => {
+        // 超时强制退出
+        this.setData({
+          isProcessing: false,
+          currentStep: 'select'
+        });
+      });
+      
       // 创建离屏canvas合成证件照
       const ctx = wx.createCanvasContext('idphotoCanvas');
       
@@ -289,8 +288,8 @@ Page({
                     destWidth: width * (this.data.resolution === 'high' ? 3 : 1),
                     destHeight: height * (this.data.resolution === 'high' ? 3 : 1),
                     success: (res) => {
-                      // 清除超时定时器
-                      this.clearTimeoutTimer();
+                      // 清除超时监控
+                      stopTimeoutMonitor();
                       this.setData({
                         resultImage: res.tempFilePath,
                         currentStep: 'result',
@@ -303,37 +302,38 @@ Page({
                       wx.hideLoading();
                     },
                     fail: (err) => {
-                      // 清除超时定时器
-                      this.clearTimeoutTimer();
+                      // 清除超时监控
+                      stopTimeoutMonitor();
                       console.error('生成证件照失败', err);
                       this.handleCanvasError(noBackgroundImage);
                     }
                   });
                 } catch (error) {
-                  // 清除超时定时器
-                  this.clearTimeoutTimer();
+                  // 清除超时监控
+                  stopTimeoutMonitor();
                   console.error('Canvas操作异常', error);
                   this.handleCanvasError(noBackgroundImage);
                 }
               }, 300);
             });
           } catch (error) {
-            // 清除超时定时器
-            this.clearTimeoutTimer();
+            // 清除超时监控
+            stopTimeoutMonitor();
             console.error('Canvas绘制异常', error);
             this.handleCanvasError(noBackgroundImage);
           }
         },
         fail: (err) => {
-          // 清除超时定时器
-          this.clearTimeoutTimer();
+          // 清除超时监控
+          stopTimeoutMonitor();
           console.error('获取图片信息失败', err);
           this.handleCanvasError(noBackgroundImage);
         }
       });
     } catch (error) {
-      // 清除超时定时器
-      this.clearTimeoutTimer();
+      // 停止超时监控
+      stopTimeoutMonitor();
+      
       console.error('Canvas创建异常', error);
       this.handleCanvasError(noBackgroundImage);
     }
@@ -341,8 +341,9 @@ Page({
   
   // 处理Canvas错误的回退方案
   handleCanvasError(noBackgroundImage: string) {
-    // 清除超时定时器
-    this.clearTimeoutTimer();
+    // 停止超时监控
+    stopTimeoutMonitor();
+    
     // Canvas操作失败时，直接使用抠图结果
     this.setData({
       resultImage: noBackgroundImage,
@@ -361,12 +362,9 @@ Page({
     });
   },
   
-  // 清除超时定时器的辅助函数
+  // 清除超时定时器的辅助函数 - 现在使用统一的stopTimeoutMonitor
   clearTimeoutTimer() {
-    if (this.timeoutTimer) {
-      clearTimeout(this.timeoutTimer);
-      this.timeoutTimer = null;
-    }
+    stopTimeoutMonitor();
   },
   
   // 重新裁剪

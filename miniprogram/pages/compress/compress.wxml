@@ -20,11 +20,28 @@
     </block>
   </view>
   
-  <block wx:if="{{imageUrl}}">
+  <block wx:if="{{imageUrl && !compressedImageUrl}}">
     <view class="compress-options">
       <view class="slider-container">
-        <text class="slider-label">质量等级: {{compressLevel}}%</text>
-        <slider min="10" max="90" value="{{compressLevel}}" activeColor="#3498db" backgroundColor="#e0e0e0" block-size="20" block-color="#ffffff" bindchange="changeCompressLevel" />
+        <text class="slider-label">压缩程度</text>
+        <!-- 使用节点式滑块 -->
+        <slider
+          min="0" 
+          max="3" 
+          value="{{compressLevelIndex}}" 
+          step="1"
+          activeColor="#3498db" 
+          backgroundColor="#e0e0e0" 
+          block-size="28" 
+          block-color="#ffffff"
+          show-value="{{false}}"
+          bindchange="changeCompressLevelIndex" />
+        
+        <view class="slider-marks">
+          <view class="mark-item" wx:for="{{compressLevelOptions}}" wx:key="value">
+            <text>{{item.label}}</text>
+          </view>
+        </view>
       </view>
       <button class="compress-button" bindtap="compressImage" loading="{{isCompressing}}">{{isCompressing ? '压缩中...' : '开始压缩'}}</button>
     </view>
@@ -48,7 +65,6 @@
 
       <view class="image-info" wx:if="{{compressionStatus !== 'failed'}}">
         <text>压缩后大小: {{compressedSize / 1024 | 0}} KB</text>
-        <text class="compression-rate">压缩率: {{compressionRate}}%</text>
       </view>
       <view class="button-group" wx:if="{{compressionStatus !== 'failed'}}">
         <button class="save-button" bindtap="saveImage">保存到相册</button>

@@ -4,6 +4,7 @@ Page({
     imageUrl: '',
     compressedImageUrl: '',
     compressLevel: 80,  // 默认压缩级别 (内部仍用数值)
+    compressLevelIndex: 1, // 默认选择标准压缩程度
     originalSize: 0,
     compressedSize: 0,
     isCompressing: false,
@@ -11,7 +12,14 @@ Page({
     imageHeight: 0,
     compressionRate: 0,
     compressionStatus: 'idle', // idle, compressing, success, failed
-    errorMessage: '' // Store error message
+    errorMessage: '', // Store error message
+    // 添加压缩程度显示选项
+    compressLevelOptions: [
+      { value: 100, label: '高清' },
+      { value: 80, label: '标准' },
+      { value: 60, label: '较小' },
+      { value: 40, label: '最小' }
+    ]
   },
 
   onLoad() {
@@ -60,13 +68,19 @@ Page({
     });
   },
 
-  // 调整压缩级别
-  changeCompressLevel(e: any) {
+  // 调整压缩级别索引 (0-3)
+  changeCompressLevelIndex(e: any) {
+    const index = parseInt(e.detail.value);
+    const level = this.data.compressLevelOptions[index].value;
+    
     this.setData({
-      compressLevel: e.detail.value
+      compressLevelIndex: index,
+      compressLevel: level
     });
+    
+    console.log(`设置压缩级别: 索引=${index}, 值=${level}`);
   },
-
+  
   // 压缩图片
   compressImage() {
     if (!this.data.imageUrl) {
@@ -127,7 +141,7 @@ Page({
         console.error('压缩失败:', err);
         this.handleCompressionError('压缩失败：' + (err.errMsg || '未知错误'));
       }
-    })
+    });
   },
 
   // 处理压缩错误 (简化，只设置状态和消息)
@@ -152,8 +166,8 @@ Page({
       });
       return;
     }
-    // ... (rest of saveImage logic) ...
-        wx.saveImageToPhotosAlbum({
+    
+    wx.saveImageToPhotosAlbum({
       filePath: this.data.compressedImageUrl,
       success: () => {
         wx.showToast({

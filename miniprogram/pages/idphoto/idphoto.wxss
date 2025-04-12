@@ -66,7 +66,7 @@ page {
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 30rpx;
+  gap: 40rpx;
 }
 
 .size-item {

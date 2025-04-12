@@ -34,7 +34,8 @@ Page({
     
     // 状态控制
     isMoving: false,
-    isScaling: false
+    isScaling: false,
+    isConfirmed: false
   },
   
   onLoad(options) {
@@ -240,6 +241,18 @@ Page({
     });
   },
   
+  // 添加onUnload生命周期函数，处理用户直接返回的情况
+  onUnload() {
+    // 页面卸载时，通知上一个页面裁剪取消
+    const pages = getCurrentPages();
+    const prevPage = pages[pages.length - 2]; // 上一页
+    
+    // 只有当不是主动确认裁剪时才执行取消操作
+    if (prevPage && !this.data.isConfirmed && prevPage.onCropCanceled) {
+      prevPage.onCropCanceled();
+    }
+  },
+  
   // 完成裁剪
   confirmCrop() {
     wx.showLoading({
@@ -248,6 +261,9 @@ Page({
     });
     
     try {
+      // 标记已确认裁剪，避免onUnload触发取消
+      this.data.isConfirmed = true;
+      
       // 创建裁剪器上下文
       const ctx = wx.createCanvasContext('cropCanvas');
       
@@ -331,11 +347,19 @@ Page({
   
   // 取消裁剪
   cancelCrop() {
+    // 获取上一页并调用取消方法
+    const pages = getCurrentPages();
+    const prevPage = pages[pages.length - 2]; // 上一页
+    
+    if (prevPage && prevPage.onCropCanceled) {
+      prevPage.onCropCanceled();
+    }
+    
     wx.navigateBack();
   },
   
   // 返回上一页
   goBack() {
-    wx.navigateBack();
+    this.cancelCrop();
   }
 }); 

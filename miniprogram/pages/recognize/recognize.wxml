@@ -16,27 +16,26 @@
     </view>
   </block>
 
-  <!-- 图片预览区域 (移动到上传区域下方) -->
+  <!-- 图片预览区域和自定义提示输入区域 -->
   <block wx:if="{{image && !recognizeResult && !isLoading}}">
     <view class="image-preview-container">
       <image class="image-preview" src="{{image}}" mode="aspectFit"></image>
       
-      <!-- 进度显示 -->
+      <!-- 添加进度条 -->
       <view class="progress-container" wx:if="{{uploadProgress > 0}}">
-        <text class="progress-text">图片准备就绪</text>
-        <progress percent="{{uploadProgress}}" active stroke-width="3" activeColor="#07c160" />
+        <progress percent="{{uploadProgress}}" stroke-width="3" activeColor="#FF9800" backgroundColor="#e0e0e0" />
+        <text class="progress-percentage">图片处理: {{uploadProgress}}%</text>
       </view>
       
-      <!-- 自定义提示输入区 -->
+      <!-- 自定义提示输入区 - 直接显示，不折叠 -->
       <view class="custom-prompt-container">
-        <view class="prompt-header" bindtap="toggleCustomPrompt">
+        <view class="prompt-header">
           <text>添加自定义提示</text>
-          <view class="toggle-icon">{{showCustomPromptInput ? '▲' : '▼'}}</view>
         </view>
         
-        <view class="prompt-input-area" wx:if="{{showCustomPromptInput}}">
-          <input class="prompt-input" placeholder="输入提示信息以获得更精确的识别结果" value="{{customPrompt}}" bindinput="onCustomPromptInput" maxlength="100" />
-          <text class="prompt-tip">例如：识别这张照片中的建筑物、翻译图片中的文字等</text>
+        <view class="prompt-input-area">
+          <input class="prompt-input" placeholder="输入提示信息，以获得更精确的识别结果" value="{{customPrompt}}" bindinput="onCustomPromptInput" maxlength="100" />
+          <text class="prompt-tip">例如："照片里的狗狗是什么品种？他现在是在笑吗？"</text>
         </view>
       </view>
       
@@ -52,13 +51,6 @@
   <block wx:if="{{isLoading}}">
     <view class="loading-container">
       <view class="loading-spinner"></view>
-      <text class="loading-text">正在识别图片内容...</text>
-      
-      <!-- 进度条 -->
-      <view class="progress-container">
-        <progress percent="{{processingProgress}}" active stroke-width="3" activeColor="#07c160" />
-        <text class="progress-percentage">{{processingProgress.toFixed(0)}}%</text>
-      </view>
     </view>
   </block>
 
@@ -67,11 +59,17 @@
     <view class="result-container">
       <image class="result-image" src="{{image}}" mode="aspectFit"></image>
       
-      <!-- 调整为只显示一个结果块 -->
+      <!-- 结果内容 -->
       <view class="result-segments" wx:if="{{resultSections.length > 0}}">
         <view class="segment-item">
-          <!-- 不再显示标题 -->
-          <!-- <text class="segment-title">{{resultSections[0].title}}</text> -->
+          <!-- 结果内容带复制按钮 -->
+          <view class="segment-header">
+            <text class="segment-title">分析结果</text>
+            <view class="copy-button" bindtap="copyResultContent">
+              <text class="copy-icon">📋</text>
+              <text class="copy-text">复制</text>
+            </view>
+          </view>
           <text class="segment-content">{{resultSections[0].content}}</text>
         </view>
       </view>
@@ -82,15 +80,4 @@
       </view>
     </view>
   </block>
-
-  <!-- (原上传区域注释掉或删除, 已移到上方) -->
-  <!-- <block wx:if="{{!image}}">
-    <view class="upload-area" bindtap="chooseImage">
-      <view class="upload-icon-placeholder">
-        <text class="icon-text">+</text>
-      </view>
-      <text class="upload-text">点击上传或拍摄图片</text>
-      <text class="upload-tip">支持多种图像类型识别</text>
-    </view>
-  </block> -->
 </view> 

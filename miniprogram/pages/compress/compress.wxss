@@ -99,6 +99,7 @@ page {
   color: #333;
   margin-bottom: 20rpx;
   display: block;
+  font-weight: bold;
 }
 
 .compress-button {
@@ -171,4 +172,64 @@ page {
 
 button:active {
   opacity: 0.8;
-} 
+}
+
+/* 添加压缩程度选项的样式 */
+.compress-level-group {
+  width: 100%;
+}
+
+.compress-level-options {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-top: 10rpx;
+}
+
+.compress-level-option {
+  display: flex;
+  align-items: center;
+  margin: 10rpx 0;
+  width: 48%;
+}
+
+.compress-level-option text {
+  margin-left: 10rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 系统提示样式 */
+.system-hint {
+  width: 100%;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 30rpx;
+  padding: 20rpx;
+  background-color: #f8f9fa;
+  border-radius: 8rpx;
+  position: fixed;
+  bottom: 20rpx;
+  left: 0;
+  right: 0;
+}
+
+/* 节点式滑块样式 */
+.slider-marks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10rpx;
+  padding: 0 5rpx;
+}
+
+.mark-item {
+  text-align: center;
+  flex: 1;
+}
+
+.mark-item text {
+  font-size: 24rpx;
+  color: #666;
+}

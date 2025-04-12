@@ -1,6 +1,6 @@
 // recognize.ts
 import { imageToBase64WithMime } from '../../utils/base64';
-import { getAPIQuota } from '../../services/backgroundService';
+import { getAPIQuota, startTimeoutMonitor, stopTimeoutMonitor } from '../../services/backgroundService';
 
 interface ResultSection {
   title: string;
@@ -132,8 +132,8 @@ Page({
     // 启动进度模拟
     this.simulateProgress();
     
-    // 设置超时处理 - 15秒后强制停止
-    this.timeoutTimer = setTimeout(() => {
+    // 使用统一的超时处理机制
+    startTimeoutMonitor(() => {
       if (this.data.isLoading) {
         // 清除进度条
         if (this.progressTimer) {
@@ -141,34 +141,13 @@ Page({
           this.progressTimer = null;
         }
         
-        // 关闭加载提示
-        wx.hideLoading();
-        
         // 重置状态
         this.setData({
           isLoading: false,
           processingProgress: 0
         });
-        
-        // 提示用户
-        wx.showModal({
-          title: '处理超时',
-          content: '图片识别处理时间过长，请稍后重试',
-          showCancel: false
-        });
       }
-    }, 15000); // 15秒超时
-    
-    // 10秒后给出"耐心等待"提示
-    setTimeout(() => {
-      if (this.data.isLoading && this.data.processingProgress < 90) {
-        wx.showToast({
-          title: '处理中，请耐心等待',
-          icon: 'none',
-          duration: 2000
-        });
-      }
-    }, 10000);
+    });
     
     // 准备请求数据 - 使用正确的请求格式
     const requestData = {
@@ -204,11 +183,8 @@ Page({
       success: (res: any) => {
         console.log('识别结果:', res.data);
         
-        // 清除超时定时器
-        if (this.timeoutTimer) {
-          clearTimeout(this.timeoutTimer);
-          this.timeoutTimer = null;
-        }
+        // 停止超时监控
+        stopTimeoutMonitor();
         
         // 更新API使用情况
         const updatedQuota = getAPIQuota();
@@ -240,11 +216,8 @@ Page({
       fail: (err) => {
         console.error('API请求失败:', err);
         
-        // 清除超时定时器
-        if (this.timeoutTimer) {
-          clearTimeout(this.timeoutTimer);
-          this.timeoutTimer = null;
-        }
+        // 停止超时监控
+        stopTimeoutMonitor();
         
         wx.showToast({
           title: '识别失败，请稍后重试',
@@ -348,10 +321,8 @@ Page({
       this.progressTimer = null;
     }
     
-    if (this.timeoutTimer) {
-      clearTimeout(this.timeoutTimer);
-      this.timeoutTimer = null;
-    }
+    // 停止超时监控
+    stopTimeoutMonitor();
   },
   
   /**
@@ -367,5 +338,29 @@ Page({
       path: '/pages/index/index',
       imageUrl: this.data.image
     };
-  }
+  },
+  
+  // 复制识别结果内容           // 你就能看到一个复制功能是如何实现的，从显示到函数实现
+  copyResultContent() {
+    if (this.data.resultSections && this.data.resultSections.length > 0) {
+      const content = this.data.resultSections[0].content;
+      
+      wx.setClipboardData({
+        data: content,
+        success: () => {
+          wx.showToast({
+            title: '复制成功',
+            icon: 'success',
+            duration: 1500
+          });
+        },
+        fail: () => {
+          wx.showToast({
+            title: '复制失败',
+            icon: 'error'
+          });
+        }
+      });
+    }
+  },
 }); 

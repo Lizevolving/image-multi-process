@@ -14,6 +14,70 @@ const API_QUOTA = {
   resetDate: new Date().toISOString().split('T')[0]  // 重置日期
 };
 
+// 超时设置
+const TIMEOUT_SETTINGS = {
+  PATIENT_HINT: 10000, // 10秒后给出耐心提示
+  FORCE_QUIT: 15000,   // 15秒后强制退出
+};
+
+// 超时定时器
+let patientHintTimer: number | null = null;
+let forceQuitTimer: number | null = null;
+
+/**
+ * 清除所有超时定时器
+ */
+function clearAllTimers() {
+  if (patientHintTimer) {
+    clearTimeout(patientHintTimer);
+    patientHintTimer = null;
+  }
+  
+  if (forceQuitTimer) {
+    clearTimeout(forceQuitTimer);
+    forceQuitTimer = null;
+  }
+}
+
+/**
+ * 启动标准超时处理机制
+ * @param {Function} onForceQuit 强制退出时的回调函数
+ */
+export function startTimeoutMonitor(onForceQuit: () => void) {
+  // 清除可能存在的计时器
+  clearAllTimers();
+  
+  // 10秒后提示耐心等待
+  patientHintTimer = setTimeout(() => {
+    wx.showToast({
+      title: '处理中，请耐心等待',
+      icon: 'none',
+      duration: 2000
+    });
+  }, TIMEOUT_SETTINGS.PATIENT_HINT);
+  
+  // 15秒后强制退出
+  forceQuitTimer = setTimeout(() => {
+    wx.hideLoading();
+    wx.showModal({
+      title: '处理超时',
+      content: '图片处理时间过长，请稍后重试',
+      showCancel: false
+    });
+    
+    if (onForceQuit) {
+      onForceQuit();
+    }
+  }, TIMEOUT_SETTINGS.FORCE_QUIT);
+}
+
+/**
+ * 停止超时监控
+ */
+export function stopTimeoutMonitor() {
+  clearAllTimers();
+}
+
 /**
  * 获取API使用情况
  * @returns {Object} API使用统计
@@ -30,6 +94,7 @@ export function getAPIQuota() {
     wx.setStorageSync('api_quota', quota);
   }
   
+  console.log('当前API配额信息:', quota);
   return quota;
 }
 
@@ -40,6 +105,8 @@ function updateAPIUsage() {
   const quota = getAPIQuota();
   quota.used += 1;
   wx.setStorageSync('api_quota', quota);
+  
+  console.log('API使用量已更新:', quota);
   
   // 在达到特定次数时显示友好提示
   if (quota.used === 10) {
@@ -71,7 +138,9 @@ function updateAPIUsage() {
  */
 export function checkAPIQuota() {
   const quota = getAPIQuota();
-  return quota.used < quota.total;
+  const canUse = quota.used < quota.total;
+  console.log(`API额度检查: ${quota.used}/${quota.total}, 可用: ${canUse}`);
+  return canUse;
 }
 
 /**
@@ -84,9 +153,12 @@ export function checkAPIQuota() {
  * @returns {Promise<string>} 处理后的图片临时路径
  */
 export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API_KEY, size: string = 'auto'): Promise<string> {
+  console.log('开始抠图处理, 图片路径:', imagePath);
+  
   return new Promise((resolve, reject) => {
     // 检查API限额
     if (!checkAPIQuota()) {
+      console.error('API额度不足，拒绝请求');
       reject(new Error('API调用次数已达到今日限额，请明天再试'));
       return;
     }
@@ -96,9 +168,44 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
       title: '处理中...',
       mask: true
     });
+    
+    console.log('启动超时监控');
+    // 启动超时监控
+    startTimeoutMonitor(() => {
+      console.error('抠图处理超时');
+      reject(new Error('处理超时，请稍后重试'));
+    });
 
+    // 检查图片路径是否有效
+    if (!imagePath || typeof imagePath !== 'string') {
+      console.error('无效的图片路径:', imagePath);
+      stopTimeoutMonitor();
+      wx.hideLoading();
+      reject(new Error('无效的图片路径'));
+      return;
+    }
+
+    console.log('准备压缩图片');
     // 压缩图片再上传，提高性能
     compressImage(imagePath).then(compressedPath => {
+      console.log('图片压缩完成, 开始上传:', compressedPath);
+      
+      // 检查API密钥
+      if (!apiKey) {
+        console.error('API密钥未提供');
+        stopTimeoutMonitor();
+        wx.hideLoading();
+        reject(new Error('API密钥未提供'));
+        return;
+      }
+      
+      // 打印请求信息
+      console.log('请求URL:', API_URL);
+      console.log('请求头:', {
+        'X-Api-Key': `${apiKey.substring(0, 3)}...${apiKey.substring(apiKey.length - 3)}` // 隐藏大部分API密钥
+      });
+      console.log('请求参数:', { size, format: 'png' });
+      
       wx.uploadFile({
         url: API_URL,
         filePath: compressedPath,
@@ -112,7 +219,13 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
         },
         timeout: 30000,  // 30秒超时
         success: (res) => {
+          // 停止超时监控
+          stopTimeoutMonitor();
+          
+          console.log('抠图API响应状态:', res.statusCode);
+          
           if (res.statusCode === 200) {
+            console.log('API响应成功，开始处理返回的图片数据');
             // 更新API使用量
             updateAPIUsage();
             
@@ -124,13 +237,15 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
               const timestamp = Date.now();
               const tempFilePath = `${wx.env.USER_DATA_PATH}/temp_${timestamp}.png`;
               
+              console.log('创建临时文件路径:', tempFilePath);
+              
               // 直接将返回的二进制数据写入文件
-              // 不尝试解析JSON，因为remove.bg API通常直接返回图片数据
               fs.writeFile({
                 filePath: tempFilePath,
                 data: res.data,
                 encoding: 'binary', // 尝试使用binary编码，而不是base64
                 success: () => {
+                  console.log('写入临时文件成功, 准备保存到文件系统');
                   // 使用文件系统的saveFile而不是wx.saveFile
                   const savedFilePath = `${wx.env.USER_DATA_PATH}/bg_removed_${timestamp}.png`;
                   
@@ -138,6 +253,7 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
                     tempFilePath: tempFilePath,
                     filePath: savedFilePath,
                     success: () => {
+                      console.log('保存文件成功, 文件路径:', savedFilePath);
                       // 隐藏加载提示
                       wx.hideLoading();
                       resolve(savedFilePath);
@@ -155,12 +271,15 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
                       wx.hideLoading();
                       
                       // 尝试直接返回临时文件路径
+                      console.log('尝试使用临时文件路径:', tempFilePath);
                       resolve(tempFilePath);
                     }
                   });
                 },
                 fail: (err) => {
                   console.error('写入文件失败', err);
+                  console.log('响应数据类型:', typeof res.data);
+                  console.log('响应数据前50字节:', JSON.stringify(res.data).substring(0, 50));
                   wx.hideLoading();
                   reject(new Error('处理图片数据失败: ' + err.errMsg));
                 }
@@ -172,15 +291,19 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
             }
           } else {
             // 处理API错误
+            console.error('API返回错误状态码:', res.statusCode);
             let errorMsg = '抠图处理失败';
             wx.hideLoading();
             
             try {
+              console.log('尝试解析错误响应:', res.data);
               const error = JSON.parse(res.data);
               errorMsg = error.errors && error.errors[0] ? error.errors[0].title : '抠图处理失败';
+              console.log('解析到的错误信息:', errorMsg);
               
               // 检查是否是API额度限制错误
               if (res.statusCode === 429 || (error.errors && error.errors[0] && error.errors[0].code === 'rate_limit_exceeded')) {
+                console.log('检测到API额度限制');
                 // 强制更新用量为限额
                 const quota = getAPIQuota();
                 quota.used = quota.total;
@@ -189,12 +312,16 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
               }
             } catch (e) {
               console.error('解析错误信息失败', e);
+              console.log('原始响应数据:', res.data);
             }
             
             reject(new Error(errorMsg));
           }
         },
         fail: (err) => {
+          // 停止超时监控
+          stopTimeoutMonitor();
+          
           console.error('API请求失败', err);
           wx.hideLoading();
           let errorMsg = '网络请求失败';
@@ -207,6 +334,10 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
         }
       });
     }).catch(err => {
+      // 停止超时监控
+      stopTimeoutMonitor();
+      
+      console.error('图片压缩失败', err);
       wx.hideLoading();
       reject(err);
     });
@@ -219,62 +350,30 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
  * @returns {Promise<string>} 压缩后的图片路径
  */
 function compressImage(imagePath: string): Promise<string> {
+  console.log('开始压缩图片:', imagePath);
+  
   return new Promise((resolve, reject) => {
-    // 由于canvas出现错误，暂时跳过压缩直接使用原图
-    resolve(imagePath);
+    // 检查图片路径
+    if (!imagePath) {
+      console.error('无效的图片路径');
+      reject(new Error('无效的图片路径'));
+      return;
+    }
     
-    // 下面是原来的压缩代码，现在暂时不使用，避免canvas错误
-    /*
-    // 获取图片信息
-    wx.getImageInfo({
+    // 尝试使用wx.compressImage API进行压缩
+    wx.compressImage({
       src: imagePath,
-      success: (imageInfo) => {
-        // 计算压缩比例，宽度最大为1000px
-        const maxWidth = 1000;
-        const originalWidth = imageInfo.width;
-        const originalHeight = imageInfo.height;
-        
-        if (originalWidth <= maxWidth) {
-          // 图片足够小，不需要压缩
-          resolve(imagePath);
-          return;
-        }
-        
-        // 计算新尺寸
-        const scale = maxWidth / originalWidth;
-        const targetWidth = maxWidth;
-        const targetHeight = Math.floor(originalHeight * scale);
-        
-        // 创建canvas压缩
-        const ctx = wx.createCanvasContext('compressCanvas');
-        
-        ctx.drawImage(imagePath, 0, 0, targetWidth, targetHeight);
-        ctx.draw(false, () => {
-          wx.canvasToTempFilePath({
-            canvasId: 'compressCanvas',
-            x: 0,
-            y: 0,
-            width: targetWidth,
-            height: targetHeight,
-            quality: 0.8,
-            success: (res) => {
-              resolve(res.tempFilePath);
-            },
-            fail: (err) => {
-              console.error('压缩图片失败', err);
-              // 如果压缩失败，使用原图
-              resolve(imagePath);
-            }
-          });
-        });
+      quality: 80, // 中等质量压缩
+      success: (res) => {
+        console.log('压缩成功, 压缩后路径:', res.tempFilePath);
+        resolve(res.tempFilePath);
       },
       fail: (err) => {
-        console.error('获取图片信息失败', err);
-        // 如果获取信息失败，使用原图
+        console.warn('wx.compressImage压缩失败, 使用原图:', err);
+        // 压缩失败，使用原图
         resolve(imagePath);
       }
     });
-    */
   });
 }
 

@@ -1,7 +1,7 @@
 {
   "usingComponents": {},
   "navigationBarTitleText": "图像识别",
-  "navigationBarBackgroundColor": "#07c160",
+  "navigationBarBackgroundColor": "#FF9800",
   "navigationBarTextStyle": "white",
   "disableScroll": false,
   "enablePullDownRefresh": false
