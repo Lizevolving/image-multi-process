@@ -15,10 +15,10 @@ Page({
     errorMessage: '', // Store error message
     // 添加压缩程度显示选项
     compressLevelOptions: [
-      { value: 100, label: '高清' },
-      { value: 80, label: '标准' },
-      { value: 60, label: '较小' },
-      { value: 40, label: '最小' }
+      { value: 100, label: '不压缩' },
+      { value: 80, label: '轻度压' },
+      { value: 60, label: '适中压' },
+      { value: 40, label: '深度压' }
     ]
   },
 
@@ -78,7 +78,7 @@ Page({
       compressLevel: level
     });
     
-    console.log(`设置压缩级别: 索引=${index}, 值=${level}`);
+    console.log(`设置压缩级别: ${this.data.compressLevelOptions[index].label}, 值=${level}`);
   },
   
   // 压缩图片

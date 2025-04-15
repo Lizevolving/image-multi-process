@@ -5,6 +5,82 @@
 
 
 
+
+
+
+
+
+
+## 4.15，707，调试：
+
+1. Compress页面
+“compressLevelOptions”，修改相应的console.log,和用户端的命名显示，用户无法准确理解4个尺度。
+
+2. recognize页面
+在识别上传的“加载中”页面，会出现两个spinner，一个是微信原生的，一个是我们自己设置的，只保留前者。
+
+
+wx.getSystemInfoSync is deprecated.Please use wx.getSystemSetting/wx.getAppAuthorizeSetting/wx.getDeviceInfo/wx.getWindowInfo/wx.getAppBaseInfo instead.
+onLoad @ crop.ts:55
+[pages/crop/crop] [Component] <canvas>: canvas 2d 接口支持同层渲染且性能更佳，建议切换使用。详见文档 https://developers.weixin.qq.com/miniprogram/dev/component/canvas.html#Canvas-2D-%E7%A4%BA%E4%BE%8B%E4%BB%A3%E7%A0%81
+
+3. BackgroundService.ts问题
+
+是什么问题？
+从选择图片成功的路径，到抠图成功的结果路径，图片均为空白。
+图片在传输/处理过程中丢失，可能是：
+临时文件被系统自动清理（如微信/浏览器临时路径）
+API返回了空数据但状态码仍为200
+本地存储路径权限不足导致文件写入失败
+
+为什么？根源分析：
+临时文件失效：http://tmp/...路径通常是系统临时目录，可能处理后立即被清除
+API响应异常：虽然状态码200，但可能返回了错误（如额度不足但未触发错误状态）
+路径权限问题：http://usr/路径可能无写入权限或为虚拟路径
+
+怎么做？
+短期验证：
+检查API返回的原始数据：在backgroundService.ts:228处打印response.data，确认是否为有效图片二进制
+替换真实存储路径：如改用FileSystem API或IndexedDB存储文件
+
+长期最佳实践：
+文件生命周期管理：
+避免依赖临时路径，改用Blob URL或持久化存储
+显式清理文件（如URL.revokeObjectURL()）
+
+API健壮性：
+校验返回数据的Content-Length和Content-Type
+捕获response.data异常（如空数据）
+
+日志增强：
+记录文件大小（压缩前/后、API返回后）
+关键操作添加try-catch并输出错误详情
+
+最关键点：数据流验证
+不要依赖路径和状态码，逐步验证：
+原始图片 → 2. 压缩后二进制 → 3. API返回数据 → 4. 最终存储文件
+在每个环节检查数据是否存在且有效（如console.log(data.length)）
+
+避免纠结手段：
+
+目标导向：目的是获取可用的去背景图片，而非“路径是否生成”。直接检查：
+javascript
+// 在抠图成功后立即加载图片验证
+const img = new Image();
+img.onload = () => console.log("图片有效");
+img.onerror = () => console.log("图片损坏");
+img.src = "http://usr/bg_removed_1744672755231.png";
+如果onerror触发，说明问题在数据流；否则问题在UI显示环节。
+
+
+
+
+
+
+
+
+
+
 ## 736，调试：
 1. Compress页面
 实现粗粒度选择的、节点式的滑块slider，而不是radio-group替代。

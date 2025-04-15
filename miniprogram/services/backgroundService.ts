@@ -239,6 +239,17 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
               
               console.log('创建临时文件路径:', tempFilePath);
               
+              // 验证响应数据是否有效
+              console.log('检查响应数据有效性:');
+              console.log('响应数据类型:', typeof res.data);
+              
+              if (!res.data || (typeof res.data === 'string' && res.data.length < 100)) {
+                console.error('响应数据异常，可能为空或无效图片数据');
+                wx.hideLoading();
+                reject(new Error('处理图片数据失败: 服务返回无效数据'));
+                return;
+              }
+              
               // 直接将返回的二进制数据写入文件
               fs.writeFile({
                 filePath: tempFilePath,
@@ -246,40 +257,84 @@ export function removeBackground(imagePath: string, apiKey: string = DEFAULT_API
                 encoding: 'binary', // 尝试使用binary编码，而不是base64
                 success: () => {
                   console.log('写入临时文件成功, 准备保存到文件系统');
-                  // 使用文件系统的saveFile而不是wx.saveFile
-                  const savedFilePath = `${wx.env.USER_DATA_PATH}/bg_removed_${timestamp}.png`;
                   
-                  fs.saveFile({
-                    tempFilePath: tempFilePath,
-                    filePath: savedFilePath,
-                    success: () => {
-                      console.log('保存文件成功, 文件路径:', savedFilePath);
-                      // 隐藏加载提示
-                      wx.hideLoading();
-                      resolve(savedFilePath);
+                  // 验证临时文件是否有效
+                  fs.getFileInfo({
+                    filePath: tempFilePath,
+                    success: (fileInfo) => {
+                      console.log('临时文件大小:', fileInfo.size, '字节');
+                      if (fileInfo.size < 100) {
+                        console.error('临时文件异常，大小过小:', fileInfo.size);
+                        wx.hideLoading();
+                        reject(new Error('处理图片数据失败: 临时文件异常'));
+                        return;
+                      }
                       
-                      // 清理临时文件
-                      fs.unlink({
-                        filePath: tempFilePath,
+                      // 使用文件系统的saveFile而不是wx.saveFile
+                      const savedFilePath = `${wx.env.USER_DATA_PATH}/bg_removed_${timestamp}.png`;
+                      
+                      fs.saveFile({
+                        tempFilePath: tempFilePath,
+                        filePath: savedFilePath,
+                        success: () => {
+                          console.log('保存文件成功, 文件路径:', savedFilePath);
+                          
+                          // 验证保存的文件
+                          fs.getFileInfo({
+                            filePath: savedFilePath,
+                            success: (savedFileInfo) => {
+                              console.log('保存文件大小:', savedFileInfo.size, '字节');
+                              
+                              // 隐藏加载提示
+                              wx.hideLoading();
+                              
+                              // 显示简单图片预览测试成功与否
+                              wx.previewImage({
+                                urls: [savedFilePath],
+                                current: savedFilePath,
+                                fail: (err) => {
+                                  console.error('预览图片失败，可能图片无效:', err);
+                                }
+                              });
+                              
+                              resolve(savedFilePath);
+                            },
+                            fail: (err) => {
+                              console.error('获取保存文件信息失败:', err);
+                              wx.hideLoading();
+                              resolve(savedFilePath); // 仍然尝试使用
+                            }
+                          });
+                          
+                          // 清理临时文件
+                          fs.unlink({
+                            filePath: tempFilePath,
+                            fail: (err) => {
+                              console.warn('清理临时文件失败', err);
+                            }
+                          });
+                        },
                         fail: (err) => {
-                          console.warn('清理临时文件失败', err);
+                          console.error('保存文件失败', err);
+                          wx.hideLoading();
+                          
+                          // 尝试直接返回临时文件路径
+                          console.log('尝试使用临时文件路径:', tempFilePath);
+                          resolve(tempFilePath);
                         }
                       });
                     },
                     fail: (err) => {
-                      console.error('保存文件失败', err);
+                      console.error('获取临时文件信息失败:', err);
                       wx.hideLoading();
-                      
-                      // 尝试直接返回临时文件路径
-                      console.log('尝试使用临时文件路径:', tempFilePath);
-                      resolve(tempFilePath);
+                      reject(new Error('处理图片数据失败: 无法验证临时文件'));
                     }
                   });
                 },
                 fail: (err) => {
                   console.error('写入文件失败', err);
                   console.log('响应数据类型:', typeof res.data);
-                  console.log('响应数据前50字节:', JSON.stringify(res.data).substring(0, 50));
+                  console.log('响应数据长度:', typeof res.data === 'string' ? res.data.length : '未知');
                   wx.hideLoading();
                   reject(new Error('处理图片数据失败: ' + err.errMsg));
                 }

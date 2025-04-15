@@ -15,7 +15,6 @@
       <image class="selected-image" src="{{imageUrl}}" mode="aspectFit" bindtap="chooseImage"></image>
       <view class="image-info">
         <text>原始大小: {{originalSize / 1024 | 0}} KB</text>
-        <text wx:if="{{imageWidth > 0}}">尺寸: {{imageWidth}} x {{imageHeight}}</text>
       </view>
     </block>
   </view>
